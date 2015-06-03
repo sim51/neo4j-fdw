@@ -22,23 +22,23 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
           log_to_postgres('The password parameter is required for Neo4j > 2.2', WARNING)
       self.password = options.get("password", None)
     
-      if 'query' not in options:
-          log_to_postgres('The query parameter is required', ERROR)
-      self.query = options.get("query", None)
+      if 'cypher' not in options:
+          log_to_postgres('The cypher parameter is required', ERROR)
+      self.cypher = options.get("cypher", None)
       
       self.columns = columns
     
     
     def execute(self, quals, columns):
-        if self.query:
-            statement = self.query
+        if self.cypher:
+            statement = self.cypher
         else:
             statement = "MATCH (n) RETURN n LIMIT 100" 
             
         log_to_postgres('Neo4j query: ' + unicode(statement), DEBUG)
         
         # Manage py2neo authentification
-        if self.user && self.password:
+        if self.user and self.password:
             authenticate(self.server, self.user, self.password)
 	
 	# Make the query
