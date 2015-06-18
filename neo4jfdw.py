@@ -67,8 +67,9 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         where_clause = 'AND '.join(self.extract_conditions(quals))
         log_to_postgres('Where clause is : ' + unicode(where_clause), DEBUG)
 
-        pattern = re.compile('(.*)RETURN(.*)', re.IGNORECASE)
+        pattern = re.compile('(.*)RETURN(.*)', re.IGNORECASE|re.MULTILINE|re.DOTALL)
         match = pattern.match(self.cypher)
+
         if len(where_clause) > 0 and match:
             cypher = match.group(1) + "WITH" + match.group(2) + " WHERE " + where_clause + " RETURN " + ', '.join(columns)
 
