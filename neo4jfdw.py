@@ -65,6 +65,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         """
         cypher = self.cypher
         where_clause = 'AND '.join(self.extract_conditions(quals))
+        log_to_postgres('Where clause is : ' + unicode(where_clause), DEBUG)
 
         pattern = re.compile('(.*)RETURN(.*)', re.IGNORECASE)
         match = pattern.match(self.cypher)
@@ -117,6 +118,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         else:
             condition = key + operator + value
 
+        log_to_postgres('Condition is : ' + unicode(condition), DEBUG)
         return condition
 
 # def insert(self, new_values):
