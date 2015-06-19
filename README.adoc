@@ -106,10 +106,10 @@ mydatabase=# CREATE SERVER multicorn_neo4j FOREIGN DATA WRAPPER multicorn
 
 Connection options are
 
- * ``server``   The remote host of Neo4j (default is localhost)
- * ``port``     The remote port of Neo4j (default is 7474)
- * ``user``     The remote user for Neo4j
- * ``password`` The remote password for Neo4j
+ * `server`   The remote host of Neo4j (default is localhost)
+ * `port`     The remote port of Neo4j (default is 7474)
+ * `user`     The remote user for Neo4j
+ * `password` The remote password for Neo4j
 
 
 === Create a foreign table
@@ -129,7 +129,7 @@ mydatabase=# CREATE FOREIGN TABLE neo4j_movie (
 
 === What does it do to reduce the amount of fetched data ?
 
-IMPORTANT: limit is not a `quals`.
+IMPORTANT: limit is not a `quals`
 
 `quals` are pushed to the remote database whenever possible. This include simple operators :
 
@@ -157,7 +157,8 @@ You have to declare those functions into your database, before to use it.
 
 [source, sql]
 ----
-mydatabase=# CREATE OR REPLACE FUNCTION cypher(query text) RETURNS SETOF json
+mydatabase=#
+CREATE OR REPLACE FUNCTION cypher(query text) RETURNS SETOF json
 LANGUAGE plpythonu
 AS $$
 from neo4jPg import neo4jPGFunction
@@ -195,7 +196,8 @@ If the return object is a Node, it's serialize as a JSON object like this : { la
 Example :
 [source, sql]
 ----
-mydatabase=# SELECT cypher  FROM cypher('MATCH (n:Location) RETURN n LIMIT 10', 'localhost', '7474', 'neo4j', 'admin');
+mydatabase=#
+SELECT cypher  FROM cypher('MATCH (n:Location) RETURN n LIMIT 10', 'localhost', '7474', 'neo4j', 'admin');
                                                             cypher
 ------------------------------------------------------------------------------------------------------------------------------
  {"n":{"labels": ["Location"],"properties": {"y": 1906520.0, "x": 1158953.0, "name": "025XX W AUGUSTA BLVD"}}}
@@ -211,12 +213,13 @@ mydatabase=# SELECT cypher  FROM cypher('MATCH (n:Location) RETURN n LIMIT 10', 
 (10 lignes)
 ----
 
-If the return object is a relation, it's serialize as a JSON object like this : { type : "MY_TYPE", properties: { object } }
+If the return object is a relation, it's serialize as a JSON object like this :` { type : "MY_TYPE", properties: { object } }`
 
 Example :
 [source, sql]
 ----
-mydatabase=# SELECT cypher  FROM cypher('MATCH (n)-[r]->(m) RETURN r AS relation LIMIT 10', 'localhost', '7474', 'neo4j', 'admin');
+mydatabase=#
+SELECT cypher  FROM cypher('MATCH (n)-[r]->(m) RETURN r AS relation LIMIT 10', 'localhost', '7474', 'neo4j', 'admin');
                           cypher
 -----------------------------------------------------------
  {"relation":{"type": "IS_TYPE_OF","properties": {}}}
@@ -236,7 +239,8 @@ Of course, for primitive type are also supported, and you can mix all of this : 
 
 [source, sql]
 ----
-mydatabase=# SELECT cypher  FROM cypher('MATCH (y:Year)-[r]->(m) RETURN y.value AS year, r, m LIMIT 10', 'localhost', '7474', 'neo4j', 'admin');
+mydatabase=#
+SELECT cypher  FROM cypher('MATCH (y:Year)-[r]->(m) RETURN y.value AS year, r, m LIMIT 10', 'localhost', '7474', 'neo4j', 'admin');
                                                       cypher
 -------------------------------------------------------------------------------------------------------------------
  {"year":2015,"r":{"type": "IN_YEAR","properties": {}},"m":{"labels": ["Crime"],"properties": {"id": "10016718"}}}
@@ -250,7 +254,7 @@ mydatabase=# SELECT cypher  FROM cypher('MATCH (y:Year)-[r]->(m) RETURN y.value 
  {"year":2015,"r":{"type": "IN_YEAR","properties": {}},"m":{"labels": ["Crime"],"properties": {"id": "10017208"}}}
  {"year":2015,"r":{"type": "IN_YEAR","properties": {}},"m":{"labels": ["Crime"],"properties": {"id": "10017211"}}}
 (10 lignes)
----
+----
 
 === The power of PG & JSON
 
@@ -258,7 +262,8 @@ PG 9.4 have a function name `json_to_record`, that convert our json into a colle
 
 [source, sql]
 ----
-mydatabase=# SELECT year, id  FROM cypher('MATCH (y:Year)<-[r]-(m) RETURN y.value AS year, m.id AS id LIMIT 10', 'localhost', '7474', 'neo4j', 'admin') , json_to_record(cypher) as x(year int, id varchar)
+mydatabase=#
+SELECT year, id  FROM cypher('MATCH (y:Year)<-[r]-(m) RETURN y.value AS year, m.id AS id LIMIT 10', 'localhost', '7474', 'neo4j', 'admin') , json_to_record(cypher) as x(year int, id varchar)
  year |    id
 ------+----------
  2015 | 10016718
