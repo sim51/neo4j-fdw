@@ -1,8 +1,16 @@
-from distutils.core import setup
-setup(name='Neo4jFDW',
-      version='0.0.1',
-      description='Neo4j FDW for PostgreSQL',
-      author='Benoit Simard',
-      author_email='contact@bsimard.com',
-      url='https://github.com/sim51/neo4j-fdw',
-      py_modules=['neo4jfdw'])
+from setuptools import setup, find_packages
+
+import neo4jPg
+
+setup(
+      name             = neo4jPg.__package__,
+      version          = neo4jPg.__version__,
+      description      = "",
+      author           = neo4jPg.__author__,
+      author_email     = neo4jPg.__email__,
+      url              = neo4jPg.__url__,
+      packages         = find_packages(),
+      install_requires =[
+          'py2neo'
+          ]
+      )

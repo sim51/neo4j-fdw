@@ -1,0 +1,6 @@
+__author__  = "Benoit Simard (@logisima)"
+__email__   = "contact@bsimard.com"
+__package__ = "py2neo"
+__version__ = "2.0.8"
+__url__     = "https://github.com/sim51/neo4j-fdw"
+__package__ = "neo4jPg"

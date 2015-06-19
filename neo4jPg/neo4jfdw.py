@@ -124,6 +124,6 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
 # def insert(self, new_values):
 # def update(self, old_values, new_values):
-#def delete(self, old_values):
+# def delete(self, old_values):
       
             
