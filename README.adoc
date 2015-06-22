@@ -57,7 +57,7 @@ mydatabase=# \q
 Now Multicorn is operational on your database.
 
 
-=== Neo4j FWD
+=== Neo4j FDW
 
 You can find Neo4j Postgres here : https://github.com/sim51/neo4j-fwd
 It's based on http://py2neo.org/2.0/[py2neo] for the Neo4j communication.
