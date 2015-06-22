@@ -62,29 +62,26 @@ Now Multicorn is operational on your database.
 You can find Neo4j Postgres here : https://github.com/sim51/neo4j-fwd
 It's based on http://py2neo.org/2.0/[py2neo] for the Neo4j communication.
 
-[cols="1,7a"]
-|===
 
-| 1
-| Clone the repository
+Clone the repository
+
 [source,bash]
 ----
 $> git clone https://github.com/sim51/neo4j-fwd
 ----
 
-| 2
-| Install the project
+
+Install the project
+
 [source,bash]
 ----
 $> cd neo4j-fdw
 $> python setup.py install
-----
 
-|===
 
 Now, you have a Postgresql server with the Multicorn extension, and  my neo4jPg module.
 At this point, everything is done to use Neo4j in Postgresql !
-
+----
 
 == Foreign Data Wrapper
 
@@ -94,9 +91,10 @@ First step, we have to create a foreign server in out postgres database
 
 [source, sql]
 ----
-mydatabase=# CREATE SERVER multicorn_neo4j FOREIGN DATA WRAPPER multicorn
+mydatabase=# 
+CREATE SERVER multicorn_neo4j FOREIGN DATA WRAPPER multicorn
   OPTIONS (
-      wrapper  'neo4fdw.Neo4jForeignDataWrapper',
+      wrapper  'neo4jPg.neo4jfdw.Neo4jForeignDataWrapper',
       server   'localhost',
       port     '7474',
       user     'neo4j',
@@ -120,9 +118,10 @@ IMPORTANT: Your cypher query must return a collection, annd you have to give an 
 
 [source, sql]
 ----
-mydatabase=# CREATE FOREIGN TABLE neo4j_movie (
+mydatabase=# 
+CREATE FOREIGN TABLE neo4j_movie (
     movie varchar
-  ) SERVER neo4j OPTIONS (
+  ) SERVER multicorn_neo4j OPTIONS (
     cypher 'MATCH (n:Movie) RETURN n.title as movie'
   );
 ----
@@ -157,6 +156,9 @@ You have to declare those functions into your database, before to use it.
 
 [source, sql]
 ----
+mydatabase=#
+CREATE EXTENSION plpythonu;
+
 mydatabase=#
 CREATE OR REPLACE FUNCTION cypher(query text) RETURNS SETOF json
 LANGUAGE plpythonu
