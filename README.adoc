@@ -77,11 +77,11 @@ Install the project
 ----
 $> cd neo4j-fdw
 $> python setup.py install
-
+----
 
 Now, you have a Postgresql server with the Multicorn extension, and  my neo4jPg module.
 At this point, everything is done to use Neo4j in Postgresql !
-----
+
 
 == Foreign Data Wrapper
 
