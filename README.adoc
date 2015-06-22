@@ -72,10 +72,7 @@ $> git clone https://github.com/sim51/neo4j-fwd
 
 
 Install the project
-<<<<<<< HEAD
 
-=======
->>>>>>> d0017fe97d4f656725a1080877e34ff06a855476
 [source,bash]
 ----
 $> cd neo4j-fdw
@@ -142,7 +139,8 @@ IMPORTANT: limit is not a `quals`
 
 [source, sql]
 ----
-mydatabase=# SELECT * FROM neo4j_movie WHERE movie LIKE 'Matr%';
+mydatabase=# 
+SELECT * FROM neo4j_movie WHERE movie LIKE 'Matr%';
 ----
 
 
