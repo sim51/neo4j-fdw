@@ -72,7 +72,10 @@ $> git clone https://github.com/sim51/neo4j-fwd
 
 
 Install the project
+<<<<<<< HEAD
 
+=======
+>>>>>>> d0017fe97d4f656725a1080877e34ff06a855476
 [source,bash]
 ----
 $> cd neo4j-fdw
