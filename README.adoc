@@ -27,19 +27,20 @@ On a debian system, you can directly type this command :
 
 [source,bash]
 ----
-$> apt-get install build-essential postgresql-server-dev-9.4 python-dev python-setuptools python-pip postgresql-plpython-9.4
+$> sudo apt-get install build-essential postgresql-server-dev-9.5 python-dev python-setuptools python-pip postgresql-plpython-9.5 postgresql-doc-9.5
 ----
 
 === Installing multicorn
 
 NOTE: If you are using PG 9.1, you should use version 0.9.X version (`git checkout v0.9.3`)
-NOTE: If you are using PG 9.2, you should use version 1.0.X version (`git checkout v01.0.4`)
+NOTE: If you are using PG 9.2, you should use version 1.0.X version (`git checkout v01.0.1`)
 
 [source,bash]
 ----
 $> cd /tmp
 $> git clone git://github.com/Kozea/Multicorn.git
 $> cd Multicorn
+$> git checkout tags/v1.3.3
 $> make && make install
 ----
 
@@ -47,7 +48,7 @@ When it's done, we can now enable the extension in our PG instance
 
 [source,bash]
 ----
-$> su - postgres
+$> sudo su - postgres
 $> psql
 mydatabase=# CREATE EXTENSION multicorn;
 CREATE EXTENSION
@@ -59,9 +60,7 @@ Now Multicorn is operational on your database.
 
 === Neo4j FDW
 
-You can find Neo4j Postgres here : https://github.com/sim51/neo4j-fwd
-It's based on http://py2neo.org/2.0/[py2neo] for the Neo4j communication.
-
+You can find The Neo4j foreign data wrapper here : https://github.com/sim51/neo4j-fwd
 
 Clone the repository
 
@@ -69,7 +68,6 @@ Clone the repository
 ----
 $> git clone https://github.com/sim51/neo4j-fwd
 ----
-
 
 Install the project
 
@@ -82,7 +80,6 @@ $> python setup.py install
 Now, you have a Postgresql server with the Multicorn extension, and  my neo4jPg module.
 At this point, everything is done to use Neo4j in Postgresql !
 
-
 == Foreign Data Wrapper
 
 === Create a neo4j server
@@ -91,12 +88,11 @@ First step, we have to create a foreign server in out postgres database
 
 [source, sql]
 ----
-mydatabase=# 
+mydatabase=#
 CREATE SERVER multicorn_neo4j FOREIGN DATA WRAPPER multicorn
   OPTIONS (
       wrapper  'neo4jPg.neo4jfdw.Neo4jForeignDataWrapper',
-      server   'localhost',
-      port     '7474',
+      url      'bolt://localhost:7687',
       user     'neo4j',
       password 'admin'
   );
@@ -104,8 +100,7 @@ CREATE SERVER multicorn_neo4j FOREIGN DATA WRAPPER multicorn
 
 Connection options are
 
- * `server`   The remote host of Neo4j (default is localhost)
- * `port`     The remote port of Neo4j (default is 7474)
+ * `url`      The bolt url for Neo4j (default is bolt://localhost:7687)
  * `user`     The remote user for Neo4j
  * `password` The remote password for Neo4j
 
@@ -118,7 +113,7 @@ IMPORTANT: Your cypher query must return a collection, annd you have to give an 
 
 [source, sql]
 ----
-mydatabase=# 
+mydatabase=#
 CREATE FOREIGN TABLE neo4j_movie (
     movie varchar
   ) SERVER multicorn_neo4j OPTIONS (
@@ -139,10 +134,9 @@ IMPORTANT: limit is not a `quals`
 
 [source, sql]
 ----
-mydatabase=# 
+mydatabase=#
 SELECT * FROM neo4j_movie WHERE movie LIKE 'Matr%';
 ----
-
 
 == Make cypher query into a sql select
 
@@ -175,11 +169,11 @@ from neo4jPg import neo4jPGFunction
 for result in neo4jPGFunction.cypher_with_server(plpy, query, server):
     yield result
 $$;
-CREATE OR REPLACE FUNCTION cypher(query text, server text, port text, login text, password text) RETURNS SETOF json
+CREATE OR REPLACE FUNCTION cypher(query text, url text, login text, password text) RETURNS SETOF json
 LANGUAGE plpythonu
 AS $$
 from neo4jPg import neo4jPGFunction
-for result in neo4jPGFunction.cypher(plpy, query, server, port, login, password):
+for result in neo4jPGFunction.cypher(plpy, query, url, login, password):
     yield result
 $$;
 ----
@@ -194,7 +188,7 @@ This define three functions :
 
 The JSON produced follow your cypher return statement : the key of the first json level correspond to you the name of yours returns, and the value to json serialisation fo the object.
 
-If the return object is a Node, it's serialize as a JSON object like this : { labels : [], properties: { object } }
+If the return object is a Node, it's serialize as a JSON object like this : { id:X, labels : [], properties: { object } }
 
 Example :
 [source, sql]

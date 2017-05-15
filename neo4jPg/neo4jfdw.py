@@ -1,34 +1,32 @@
 from multicorn import ForeignDataWrapper
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG
-from py2neo import neo4j
+from neo4j.v1 import GraphDatabase, basic_auth
 import re
 
 
 class Neo4jForeignDataWrapper(ForeignDataWrapper):
+
     """
     Neo4j FWD for Postgresql
     """
 
     def __init__(self, options, columns):
+
         # Calling super constructor
         super(Neo4jForeignDataWrapper, self).__init__(options, columns)
 
         # Managed server option
-        if 'server' not in options:
-            log_to_postgres('The server parameter is required and the default is "localhost"', WARNING)
-        self.server = options.get("server", "localhost:7474")
-
-        if 'port' not in options:
-            log_to_postgres('The port parameter is required and the default is "7474"', WARNING)
-        self.port = options.get("port", "7474")
+        if 'url' not in options:
+            log_to_postgres('The Bolt url parameter is required and the default is "bolt://localhost:7687"', WARNING)
+        self.url = options.get("url", "bolt://localhost:7687")
 
         if 'user' not in options:
-            log_to_postgres('The user parameter is required for Neo4j > 2.2', WARNING)
-        self.user = options.get("user", None)
+            log_to_postgres('The user parameter is required  and the default is "neo4j"', WARNING)
+        self.user = options.get("user", "neo4j")
 
         if 'password' not in options:
-            log_to_postgres('The password parameter is required for Neo4j > 2.2', WARNING)
-        self.password = options.get("password", None)
+            log_to_postgres('The password parameter is required for Neo4j', ERROR)
+        self.password = options.get("password", "")
 
         if 'cypher' not in options:
             log_to_postgres('The cypher parameter is required', ERROR)
@@ -37,10 +35,8 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         # Setting table columns
         self.columns = columns
 
-        # Create a py2neo graph instance
-        if self.user and self.password:
-            neo4j.authenticate(self.server + ":" + self.port, self.user, self.password)
-        self.graph = neo4j.Graph("http://" + self.server + ":" + self.port + "/db/data/")
+        # Create a neo4j driver instance
+        self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password))
 
 
     def execute(self, quals, columns):
@@ -48,16 +44,21 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         log_to_postgres('Query Columns:  %s' % columns, DEBUG)
         log_to_postgres('Query Filters:  %s' % quals, DEBUG)
 
+
         statement = self.make_cypher(quals, columns)
         log_to_postgres('Neo4j query: ' + unicode(statement), DEBUG)
 
         # Execute & retrieve neo4j data
-        for record in self.graph.cypher.stream(statement):
+        session = self.driver.session()
+        result = session.run(statement)
+        for record in result:
             line = {}
             for column_name in self.columns:
-                if hasattr(record, column_name):
-                    line[column_name] = record[column_name]
+                line[column_name] = record[column_name]
             yield line
+
+        session.close()
+
 
     def make_cypher(self, quals, columns):
         """
@@ -125,5 +126,3 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 # def insert(self, new_values):
 # def update(self, old_values, new_values):
 # def delete(self, old_values):
-      
-            
