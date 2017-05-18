@@ -6,6 +6,7 @@ Neo4j Postgres function
 """
 
 import json
+import ast
 from neo4j.v1 import GraphDatabase, basic_auth
 
 
@@ -13,24 +14,20 @@ def cypher(plpy, query, params, url, login, password):
     """
         Make cypher query and return JSON result
     """
-    plpy.info(json.__file__ )
-    plpy.info("Url:" + url + " | login:" + str(login) + " | password:" + str(password))
+    #plpy.info(json.__file__ )
+    #plpy.info("Url:" + url + " | login:" + str(login) + " | password:" + str(password))
 
     driver = GraphDatabase.driver( url, auth=basic_auth(login, password))
     session = driver.session()
-    result = session.run(query, params)
+    result = session.run(query, ast.literal_eval(params))
     keys = result.keys()
     for record in result:
-
         jsonResult  = "{"
         for key in keys:
-
             if len(jsonResult) > 1:
                 jsonResult += ","
             jsonResult += '"' + key + '":'
-
             object = record[key]
-            plpy.info("Object class name is :" + object.__class__.__name__)
             if object.__class__.__name__ == "Node":
                 jsonResult += node2json(object)
             elif object.__class__.__name__ == "Relationship":
@@ -39,13 +36,8 @@ def cypher(plpy, query, params, url, login, password):
                 jsonResult += path2json(object)
             else:
                 jsonResult += json.dumps(object)
-
         jsonResult += "}"
-
-        plpy.info("Result is :" + jsonResult)
-
         yield jsonResult
-
     session.close()
 
 def cypher_with_server(plpy, query, params, server):
@@ -78,13 +70,6 @@ def cypher_default_server(plpy, query, params):
         Make cypher query and return JSON result
     """
     for result in cypher_with_server(plpy, query, params, None):
-        yield result
-
-def cypher_default_server(plpy, query):
-    """
-        Make cypher query and return JSON result
-    """
-    for result in cypher_with_server(plpy, query, {}, None):
         yield result
 
 def node2json(node):
@@ -129,6 +114,9 @@ def path2json(path):
     return jsonResult
 
 def set_default(obj):
+    """
+        For JSON Serializer : convert set to list
+    """
     if isinstance(obj, set):
         return list(obj)
     raise TypeError
