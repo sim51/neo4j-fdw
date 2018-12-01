@@ -46,17 +46,19 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
 
         statement = self.make_cypher(quals, columns)
+        params = {}
+        for index, qual in enumerate(quals):
+            params[unicode(index)] = qual.value
         log_to_postgres('Neo4j query: ' + unicode(statement), DEBUG)
 
         # Execute & retrieve neo4j data
         session = self.driver.session()
-        result = session.run(statement)
+        result = session.run(statement, params)
         for record in result:
             line = {}
             for column_name in self.columns:
                 line[column_name] = record[column_name]
             yield line
-
         session.close()
 
 
@@ -82,14 +84,14 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         Build a neo4j search criteria string from a list of quals
         """
         conditions = []
-        for qual in quals:
-            conditions.append(self.make_condition(qual.field_name, qual.operator, qual.value))
+        for index, qual in enumerate(quals):
+            conditions.append(self.make_condition(qual.field_name, qual.operator, qual.value, index))
 
         conditions = [x for x in conditions if x not in (None, '()')]
         return conditions
 
 
-    def make_condition(self, key, operator, value):
+    def make_condition(self, key, operator, value, index):
         """
         Build a neo4j condition from a qual
         """
@@ -118,7 +120,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
             condition += regex + "'"
 
         else:
-            condition = key + operator + value
+            condition = key + operator + "$`" + unicode(index) + "`"
 
         log_to_postgres('Condition is : ' + unicode(condition), DEBUG)
         return condition

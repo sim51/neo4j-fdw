@@ -27,7 +27,7 @@ On a debian system, you can directly type this command :
 
 [source,bash]
 ----
-$> sudo apt-get install build-essential postgresql-server-dev-9.5 python-dev python-setuptools python-pip postgresql-plpython-9.5 postgresql-doc-9.5
+$> sudo apt-get install build-essential postgresql-server-dev-10 python-dev python-setuptools python-dev python-pip postgresql-plpython-10
 ----
 
 === Installing multicorn
@@ -92,7 +92,7 @@ mydatabase=#
 CREATE SERVER multicorn_neo4j FOREIGN DATA WRAPPER multicorn
   OPTIONS (
       wrapper  'neo4jPg.neo4jfdw.Neo4jForeignDataWrapper',
-      url      'bolt://localhost:7687',
+      url      'bolt://172.17.0.1:7687',
       user     'neo4j',
       password 'admin'
   );
