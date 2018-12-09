@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
+from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG
 
 """
 Neo4j Postgres function
@@ -19,11 +20,10 @@ def cypher(plpy, query, params, url, login, password):
 
     driver = GraphDatabase.driver( url, auth=basic_auth(login, password))
     session = driver.session()
-    result = session.run(query, ast.literal_eval(params))
-    keys = result.keys()
-    for record in result:
+    log_to_postgres(query, ERROR)
+    for record in session.run(query, ast.literal_eval(params)):
         jsonResult  = "{"
-        for key in keys:
+        for key in record.keys():
             if len(jsonResult) > 1:
                 jsonResult += ","
             jsonResult += '"' + key + '":'
@@ -77,9 +77,9 @@ def node2json(node):
         Convert a node to json
     """
     jsonResult = "{"
-    jsonResult += '"id": ' + json.dumps(node.id) + ','
-    jsonResult += '"labels": ' + json.dumps(node.labels, default=set_default) + ','
-    jsonResult += '"properties": ' + json.dumps(node.properties, default=set_default)
+    jsonResult += '"id": ' + json.dumps(node._id) + ','
+    jsonResult += '"labels": ' + json.dumps(node._labels, default=set_default) + ','
+    jsonResult += '"properties": ' + json.dumps(node._properties, default=set_default)
     jsonResult += "}"
 
     return jsonResult
@@ -90,9 +90,9 @@ def relation2json(rel):
         Convert a relation to json
     """
     jsonResult = "{"
-    jsonResult += '"id": ' + json.dumps(rel.id) + ','
-    jsonResult += '"type": ' + json.dumps(rel.type) + ','
-    jsonResult += '"properties": ' + json.dumps(rel.properties, default=set_default)
+    jsonResult += '"id": ' + json.dumps(rel._id) + ','
+    jsonResult += '"type": ' + json.dumps(rel._type) + ','
+    jsonResult += '"properties": ' + json.dumps(rel._properties, default=set_default)
     jsonResult += "}"
 
     return jsonResult
