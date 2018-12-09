@@ -279,11 +279,5 @@ SELECT year, id  FROM cypher('MATCH (y:Year)<-[r]-(m) RETURN y.value AS year, m.
 
 == Run test
 
-=== Construct docker images
-
-[source,shell]
-----
-docker-compose build
-docker-compose up --detach
-
-----
+You need to have **docker compose** installed.
+Then you just have to run  the `./tests.sh` script.
