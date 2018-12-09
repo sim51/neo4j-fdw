@@ -3,7 +3,6 @@ from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG
 from neo4j import GraphDatabase, basic_auth
 import re
 
-
 class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
     """
@@ -43,7 +42,6 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
         log_to_postgres('Query Columns:  %s' % columns, DEBUG)
         log_to_postgres('Query Filters:  %s' % quals, DEBUG)
-
 
         statement = self.make_cypher(quals, columns)
         params = {}
