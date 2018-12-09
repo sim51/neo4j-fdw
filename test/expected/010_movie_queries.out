@@ -1,0 +1,52 @@
+SELECT * FROM movie LIMIT 10;
+ id |         title          | released |                                                                                    tagline                                                                                    
+----+------------------------+----------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  0 | The Matrix             |     1999 | Welcome to the Real World
+  9 | The Matrix Reloaded    |     2003 | Free your mind
+ 10 | The Matrix Revolutions |     2003 | Everything that has a beginning has an end
+ 11 | The Devil's Advocate   |     1997 | Evil has its winning ways
+ 15 | A Few Good Men         |     1992 | In the heart of the nation's capital, in a courthouse of the U.S. government, one man will stop at nothing to keep his honor, and one will stop at nothing to find the truth.
+ 29 | Top Gun                |     1986 | I feel the need, the need for speed.
+ 37 | Jerry Maguire          |     2000 | The rest of his life begins now.
+ 46 | Stand By Me            |     1986 | For some, it's the last real taste of innocence, and the first real taste of life. But for everyone, it's the time that memories are made of.
+ 52 | As Good as It Gets     |     1997 | A comedy from the heart that goes for the throat.
+ 56 | What Dreams May Come   |     1998 | After life there is more. The end is just the beginning.
+(10 rows)
+
+SELECT * FROM movie m WHERE m.released > 2000 ORDER BY m.released DESC LIMIT 10;
+ id  |         title          | released |                                                tagline                                                
+-----+------------------------+----------+-------------------------------------------------------------------------------------------------------
+ 105 | Cloud Atlas            |     2012 | Everything is connected
+ 128 | Ninja Assassin         |     2009 | Prepare to enter a secret world of assassins
+ 137 | Frost/Nixon            |     2008 | 400 million people were waiting for the truth.
+ 121 | Speed Racer            |     2008 | Speed has no limits
+ 159 | Charlie Wilson's War   |     2007 | A stiff drink. A little mascara. A lot of nerve. Who said they couldn't bring down the Soviet empire.
+ 111 | The Da Vinci Code      |     2006 | Break The Codes
+ 116 | V for Vendetta         |     2006 | Freedom! Forever!
+  92 | RescueDawn             |     2006 | Based on the extraordinary true story of one man's fight for freedom
+ 161 | The Polar Express      |     2004 | This Holiday Season… Believe
+ 154 | Something's Gotta Give |     2003 | 
+(10 rows)
+
+SELECT * FROM movie m WHERE m.title = 'The Matrix';
+ id |   title    | released |          tagline          
+----+------------+----------+---------------------------
+  0 | The Matrix |     1999 | Welcome to the Real World
+(1 row)
+
+SELECT * FROM movie m WHERE m.title LIKE '%Matrix%';
+ id |         title          | released |                  tagline                   
+----+------------------------+----------+--------------------------------------------
+  0 | The Matrix             |     1999 | Welcome to the Real World
+  9 | The Matrix Reloaded    |     2003 | Free your mind
+ 10 | The Matrix Revolutions |     2003 | Everything that has a beginning has an end
+(3 rows)
+
+SELECT * FROM movie m WHERE m.title ILIKE '%matrix%';
+ id |         title          | released |                  tagline                   
+----+------------------------+----------+--------------------------------------------
+  0 | The Matrix             |     1999 | Welcome to the Real World
+  9 | The Matrix Reloaded    |     2003 | Free your mind
+ 10 | The Matrix Revolutions |     2003 | Everything that has a beginning has an end
+(3 rows)
+

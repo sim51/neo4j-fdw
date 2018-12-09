@@ -1,0 +1,23 @@
+version: '3'
+services:
+  # Neo4j service
+  neo4j:
+    build:
+      context: .
+      dockerfile: ./docker/neo4j/Dockerfile
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+          - .:/source
+    container_name: "fdw-neo4j"
+  # Custom postgres from dokerfile
+  postgres:
+    build:
+      context: .
+      dockerfile: ./docker/postgres/Dockerfile
+    ports:
+      - 5432:5432
+    volumes:
+          - .:/source
+    container_name: "fdw-pg"
