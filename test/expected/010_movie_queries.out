@@ -50,3 +50,15 @@ SELECT * FROM movie m WHERE m.title ILIKE '%matrix%';
  10 | The Matrix Revolutions |     2003 | Everything that has a beginning has an end
 (3 rows)
 
+SELECT count(*) FROM movie m WHERE m.released > 2000;
+ count 
+-------
+    12
+(1 row)
+
+SELECT avg(released) FROM movie m WHERE m.title like '%Matrix%';
+          avg          
+-----------------------
+ 2001.6666666666666667
+(1 row)
+

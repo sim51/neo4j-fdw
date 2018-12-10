@@ -1,5 +1,5 @@
 from multicorn import ForeignDataWrapper
-from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG
+from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG, INFO
 from neo4j import GraphDatabase, basic_auth
 import re
 
@@ -54,7 +54,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         result = session.run(statement, params)
         for record in result:
             line = {}
-            for column_name in self.columns:
+            for column_name in columns:
                 line[column_name] = record[column_name]
             yield line
         session.close()
