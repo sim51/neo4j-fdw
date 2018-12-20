@@ -20,5 +20,6 @@ su postgres <<EOF
 EOF
 
 if [ -f '/tmp/regression.diffs' ]; then
+  cat /tmp/regression.diffs
   exit 1
 fi

@@ -5,17 +5,29 @@
 # Before all tests
 ####################################################################
 echo "~~~"
-echo "~ Before all tests"
-echo "~~~"
-echo
-
-echo
 echo "~ Run docker compose"
-docker-compose rm -f
+echo "~~~"
 docker-compose pull
 docker-compose up --build --detach
-sleep 10
 
+echo "~~~"
+echo "~ Install/Update extension in Postgres"
+echo "~~~"
+docker exec -it fdw-pg /source/docker/postgres/init.sh
+
+echo "~~~"
+echo "~ Loading Movie database"
+echo "~~~"
+# Wait until the database is up and ready
+echo "~~~"
+echo "~ Waiting Neo4j to be ready"
+echo "~~~"
+until $(curl --output /dev/null --silent --head --fail http://localhost:7474); do
+  printf '.'
+  sleep 1
+done
+echo
+docker exec -it fdw-neo4j /source/docker/neo4j/init.sh
 ####################################################################
 # Run python unit test
 ####################################################################
