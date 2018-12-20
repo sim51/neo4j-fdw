@@ -87,7 +87,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         for index, qual in enumerate(quals):
             conditions.append(self.make_condition(qual.field_name, qual.operator, qual.value, index))
 
-        conditions = [x for x in conditions if x not in (None, '()')]
+        conditions = [x for x in conditions if x not in (None, '()', '')]
         return conditions
 
 
