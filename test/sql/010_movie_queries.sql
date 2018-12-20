@@ -7,3 +7,4 @@ SELECT * FROM movie m WHERE m.title ILIKE '%matrix%';
 SELECT count(*) FROM movie m WHERE m.released > 2000;
 SELECT avg(released) FROM movie m WHERE m.title like '%Matrix%';
 SELECT title, released, tagline FROM movie m WHERE m.title IN ('The Matrix', 'Top Gun') AND m.released > 1980;
+SELECT title, released, tagline FROM movie m WHERE NOT m.title IN ('The Matrix', 'Top Gun') AND m.released > 1980;

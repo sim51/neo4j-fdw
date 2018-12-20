@@ -1,4 +1,4 @@
-from multicorn import ForeignDataWrapper
+from multicorn import ForeignDataWrapper, ANY, ALL
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG, INFO
 from neo4j import GraphDatabase, basic_auth, CypherError
 import re
@@ -46,7 +46,8 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         params = {}
         for index, qual in enumerate(quals):
             params[unicode(index)] = qual.value
-        log_to_postgres('Neo4j query: ' + unicode(statement), DEBUG)
+        log_to_postgres('Neo4j query is : ' + unicode(statement), DEBUG)
+        log_to_postgres('With params : ' + unicode(params), DEBUG)
 
         # Execute & retrieve neo4j data
         session = self.driver.session()
@@ -67,7 +68,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         Override cypher query to add search criteria
         """
         cypher = self.cypher
-        where_clause = 'AND '.join(self.extract_conditions(quals))
+        where_clause = ' AND '.join(self.extract_conditions(quals))
         log_to_postgres('Where clause is : ' + unicode(where_clause), DEBUG)
 
         pattern = re.compile('(.*)RETURN(.*)', re.IGNORECASE|re.MULTILINE|re.DOTALL)
@@ -85,42 +86,52 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         """
         conditions = []
         for index, qual in enumerate(quals):
-            conditions.append(self.make_condition(qual.field_name, qual.operator, qual.value, index))
+            # quals is a list with ANY
+            if qual.list_any_or_all == ANY:
+                values = [
+                    '( %s )' % self.make_condition(qual.field_name, qual.operator[0], value, unicode(index) + '[' + unicode(array_index) + ']')
+                    for array_index, value in enumerate(qual.value)
+                ]
+                conditions.append( ' ( ' +  ' OR '.join(values) + ' ) ')
+            # quals is a list with ALL
+            elif qual.list_any_or_all == ALL:
+                conditions.extend([
+                    self.make_condition(qual.field_name, qual.operator[0], value, unicode(index) + '[' + unicode(array_index) + ']')
+                    for array_index, value in enumerate(qual.value)
+                ])
+            # quals is just a string
+            else:
+                conditions.append(self.make_condition( qual.field_name, qual.operator, qual.value, index))
 
         conditions = [x for x in conditions if x not in (None, '()', '')]
         return conditions
 
 
-    def make_condition(self, key, operator, value, index):
+    def make_condition(self, field_name, operator, value, index):
         """
         Build a neo4j condition from a qual
         """
-        if operator not in ('~~', '!~~', '~~*', '!~~*', '=', '<>', '>=', '<='):
-            return ''
-
         condition = ''
-
-        # Managed LIKE & ILIKE
         if operator in ('~~', '!~~', '~~*', '!~~*'):
             # Convert to cypher regex
             regex = value.replace('%', '.*')
 
             # For the negation, we prefix with NOT
             if operator in ('!~~', '!~~*'):
-                condition += 'NOT '
+                condition += ' NOT '
 
             # Adding the variable name
-            condition += key + "=~'"
+            condition += field_name + " =~ '"
 
             # If it's a ILIKE, we prefix regex with (?i)
             if operator in ('~~*', '!~~*'):
                 condition += '(?i)'
 
             # We add the regex
-            condition += regex + "'"
+            condition += regex + "' "
 
         else:
-            condition = key + operator + "$`" + unicode(index) + "`"
+            condition = field_name + ' ' + operator + "$" + unicode(index) + ""
 
         log_to_postgres('Condition is : ' + unicode(condition), DEBUG)
         return condition
