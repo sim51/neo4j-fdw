@@ -1,50 +1,47 @@
-#!/usr/bin/env python
-# -*- encoding: utf-8 -*-
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG
+from neo4j import GraphDatabase, basic_auth, CypherError
+import json
+import ast
 
 """
 Neo4j Postgres function
 """
-
-import json
-import ast
-from neo4j.v1 import GraphDatabase, basic_auth
-
-
 def cypher(plpy, query, params, url, login, password):
     """
         Make cypher query and return JSON result
     """
-    #plpy.info(json.__file__ )
-    #plpy.info("Url:" + url + " | login:" + str(login) + " | password:" + str(password))
-
     driver = GraphDatabase.driver( url, auth=basic_auth(login, password))
     session = driver.session()
-    log_to_postgres(query, ERROR)
-    for record in session.run(query, ast.literal_eval(params)):
-        jsonResult  = "{"
-        for key in record.keys():
-            if len(jsonResult) > 1:
-                jsonResult += ","
-            jsonResult += '"' + key + '":'
-            object = record[key]
-            if object.__class__.__name__ == "Node":
-                jsonResult += node2json(object)
-            elif object.__class__.__name__ == "Relationship":
-                jsonResult += relation2json(object)
-            elif object.__class__.__name__ == "Path":
-                jsonResult += path2json(object)
-            else:
-                jsonResult += json.dumps(object)
-        jsonResult += "}"
-        yield jsonResult
-    session.close()
+    log_to_postgres("Cypher function with query " + query + " and params " + unicode(params), DEBUG)
+
+    # Execute & retrieve neo4j data
+    try:
+        for record in session.run(query, ast.literal_eval(params)):
+            jsonResult  = "{"
+            for key in record.keys():
+                if len(jsonResult) > 1:
+                    jsonResult += ","
+                jsonResult += '"' + key + '":'
+                object = record[key]
+                if object.__class__.__name__ == "Node":
+                    jsonResult += node2json(object)
+                elif object.__class__.__name__ == "Relationship":
+                    jsonResult += relation2json(object)
+                elif object.__class__.__name__ == "Path":
+                    jsonResult += path2json(object)
+                else:
+                    jsonResult += json.dumps(object)
+            jsonResult += "}"
+            yield jsonResult
+    except CypherError:
+        raise RuntimeError("Bad cypher query : " + statement)
+    finally:
+        session.close()
 
 def cypher_with_server(plpy, query, params, server):
     """
         Make cypher query and return JSON result
     """
-
     sql = "SELECT unnest(srvoptions) AS conf FROM pg_foreign_server"
     if server:
         sql = "SELECT unnest(srvoptions) AS conf FROM pg_foreign_server WHERE srvname='" + server +"'"

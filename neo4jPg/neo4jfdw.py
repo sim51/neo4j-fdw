@@ -1,10 +1,9 @@
 from multicorn import ForeignDataWrapper
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG, INFO
-from neo4j import GraphDatabase, basic_auth
+from neo4j import GraphDatabase, basic_auth, CypherError
 import re
 
 class Neo4jForeignDataWrapper(ForeignDataWrapper):
-
     """
     Neo4j FWD for Postgresql
     """
@@ -20,7 +19,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         self.url = options.get("url", "bolt://localhost:7687")
 
         if 'user' not in options:
-            log_to_postgres('The user parameter is required  and the default is "neo4j"', WARNING)
+            log_to_postgres('The user parameter is required  and the default is "neo4j"', ERROR)
         self.user = options.get("user", "neo4j")
 
         if 'password' not in options:
@@ -51,13 +50,16 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
         # Execute & retrieve neo4j data
         session = self.driver.session()
-        result = session.run(statement, params)
-        for record in result:
-            line = {}
-            for column_name in columns:
-                line[column_name] = record[column_name]
-            yield line
-        session.close()
+        try:
+            for record in session.run(statement, params):
+                line = {}
+                for column_name in columns:
+                    line[column_name] = record[column_name]
+                yield line
+        except CypherError:
+            raise RuntimeError("Bad cypher query : " + statement)
+        finally:
+            session.close()
 
 
     def make_cypher(self, quals, columns):
