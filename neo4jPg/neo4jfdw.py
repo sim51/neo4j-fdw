@@ -37,12 +37,12 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password))
 
 
-    def execute(self, quals, columns):
+    def execute(self, quals, columns, sortkeys=None):
 
         log_to_postgres('Query Columns:  %s' % columns, DEBUG)
         log_to_postgres('Query Filters:  %s' % quals, DEBUG)
 
-        statement = self.make_cypher(quals, columns)
+        statement = self.make_cypher(quals, columns, sortkeys)
         params = {}
         for index, qual in enumerate(quals):
             params[unicode(index)] = qual.value
@@ -63,7 +63,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
             session.close()
 
 
-    def make_cypher(self, quals, columns):
+    def make_cypher(self, quals, columns, sortkeys):
         """
         Override cypher query to add search criteria
         """
@@ -76,6 +76,15 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
         if len(where_clause) > 0 and match:
             cypher = match.group(1) + "WITH" + match.group(2) + " WHERE " + where_clause + " RETURN " + ', '.join(columns)
+
+        if sortkeys is not None:
+            orders = []
+            for sortkey in sortkeys:
+                if sortkey.is_reversed:
+                    orders.append(sortkey.attname + ' DESC')
+                else:
+                    orders.append(sortkey.attname)
+            cypher = cypher + ' ORDER BY ' + ', '.join(orders)
 
         return cypher
 
