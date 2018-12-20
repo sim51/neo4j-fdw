@@ -1,6 +1,6 @@
 version: '3'
 services:
-  
+
   # Neo4j service
   neo4j:
     image: neo4j:enterprise
@@ -18,7 +18,7 @@ services:
   postgres:
     build:
       context: .
-      dockerfile: ./docker/postgres/Dockerfile
+      dockerfile: ./scripts/docker/postgres/Dockerfile
     ports:
       - 5432:5432
     volumes:

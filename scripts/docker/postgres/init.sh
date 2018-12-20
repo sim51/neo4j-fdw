@@ -10,5 +10,9 @@ make && make install
 
 # Install neo4j fdw
 echo "~~~~~~~~~~~~~ Installing Neo4j FDW"
-cd /source/
-python setup.py install
+if [ -d "/source" ]; then
+  cd /source/
+else
+  cd /neo4j-fdw/source/
+fi
+make install

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+cd $DIR
+cd ..
 
 ####################################################################
 # Before all tests
@@ -7,13 +10,14 @@
 echo "~~~"
 echo "~ Run docker compose"
 echo "~~~"
+docker-compose rm -f
 docker-compose pull
 docker-compose up --build --detach
 
 echo "~~~"
 echo "~ Install/Update extension in Postgres"
 echo "~~~"
-docker exec -it fdw-pg /source/docker/postgres/init.sh
+docker exec -it fdw-pg /source/scripts/docker/postgres/init.sh
 
 echo "~~~"
 echo "~ Loading Movie database"
@@ -27,7 +31,8 @@ until $(curl --output /dev/null --silent --head --fail http://localhost:7474); d
   sleep 1
 done
 echo
-docker exec -it fdw-neo4j /source/docker/neo4j/init.sh
+docker exec -it fdw-neo4j /source/scripts/docker/neo4j/init.sh
+
 ####################################################################
 # Run python unit test
 ####################################################################
@@ -53,7 +58,7 @@ echo "~~~"
 echo
 
 echo "~ Execute pg_regress tests"
-docker exec -it fdw-pg /source/pg_regress.sh /source/test
+docker exec -it fdw-pg /source/scripts/pg_regress.sh /source/test
 if [ $? -gt 0 ]; then
   echo "Some regress test failed"
   exit 1
