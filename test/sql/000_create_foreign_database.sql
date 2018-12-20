@@ -1,4 +1,4 @@
-
+\a
 CREATE EXTENSION multicorn;
 
 CREATE SERVER multicorn_neo4j FOREIGN DATA WRAPPER multicorn

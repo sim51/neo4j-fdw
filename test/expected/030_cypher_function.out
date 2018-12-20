@@ -1,42 +1,33 @@
+\a
 SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS ''The Matrix'' RETURN m ORDER BY m.released DESC');
-                                                                              cypher                                                                               
--------------------------------------------------------------------------------------------------------------------------------------------------------------------
- {"m":{"id": 10,"labels": ["Movie"],"properties": {"tagline": "Everything that has a beginning has an end", "title": "The Matrix Revolutions", "released": 2003}}}
- {"m":{"id": 9,"labels": ["Movie"],"properties": {"tagline": "Free your mind", "title": "The Matrix Reloaded", "released": 2003}}}
- {"m":{"id": 0,"labels": ["Movie"],"properties": {"tagline": "Welcome to the Real World", "title": "The Matrix", "released": 1999}}}
+cypher
+{"m":{"id": 10,"labels": ["Movie"],"properties": {"tagline": "Everything that has a beginning has an end", "title": "The Matrix Revolutions", "released": 2003}}}
+{"m":{"id": 9,"labels": ["Movie"],"properties": {"tagline": "Free your mind", "title": "The Matrix Reloaded", "released": 2003}}}
+{"m":{"id": 0,"labels": ["Movie"],"properties": {"tagline": "Welcome to the Real World", "title": "The Matrix", "released": 1999}}}
 (3 rows)
-
 SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS "The Matrix" RETURN m ORDER BY m.released DESC');
-                                                                              cypher                                                                               
--------------------------------------------------------------------------------------------------------------------------------------------------------------------
- {"m":{"id": 10,"labels": ["Movie"],"properties": {"tagline": "Everything that has a beginning has an end", "title": "The Matrix Revolutions", "released": 2003}}}
- {"m":{"id": 9,"labels": ["Movie"],"properties": {"tagline": "Free your mind", "title": "The Matrix Reloaded", "released": 2003}}}
- {"m":{"id": 0,"labels": ["Movie"],"properties": {"tagline": "Welcome to the Real World", "title": "The Matrix", "released": 1999}}}
+cypher
+{"m":{"id": 10,"labels": ["Movie"],"properties": {"tagline": "Everything that has a beginning has an end", "title": "The Matrix Revolutions", "released": 2003}}}
+{"m":{"id": 9,"labels": ["Movie"],"properties": {"tagline": "Free your mind", "title": "The Matrix Reloaded", "released": 2003}}}
+{"m":{"id": 0,"labels": ["Movie"],"properties": {"tagline": "Welcome to the Real World", "title": "The Matrix", "released": 1999}}}
 (3 rows)
-
 SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS $search RETURN m ORDER BY m.released DESC','{''search'':''Matrix''}');
-                                                                              cypher                                                                               
--------------------------------------------------------------------------------------------------------------------------------------------------------------------
- {"m":{"id": 10,"labels": ["Movie"],"properties": {"tagline": "Everything that has a beginning has an end", "title": "The Matrix Revolutions", "released": 2003}}}
- {"m":{"id": 9,"labels": ["Movie"],"properties": {"tagline": "Free your mind", "title": "The Matrix Reloaded", "released": 2003}}}
- {"m":{"id": 0,"labels": ["Movie"],"properties": {"tagline": "Welcome to the Real World", "title": "The Matrix", "released": 1999}}}
+cypher
+{"m":{"id": 10,"labels": ["Movie"],"properties": {"tagline": "Everything that has a beginning has an end", "title": "The Matrix Revolutions", "released": 2003}}}
+{"m":{"id": 9,"labels": ["Movie"],"properties": {"tagline": "Free your mind", "title": "The Matrix Reloaded", "released": 2003}}}
+{"m":{"id": 0,"labels": ["Movie"],"properties": {"tagline": "Welcome to the Real World", "title": "The Matrix", "released": 1999}}}
 (3 rows)
-
 SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS $search RETURN m ORDER BY m.released DESC','{"search":"Matrix"}');
-                                                                              cypher                                                                               
--------------------------------------------------------------------------------------------------------------------------------------------------------------------
- {"m":{"id": 10,"labels": ["Movie"],"properties": {"tagline": "Everything that has a beginning has an end", "title": "The Matrix Revolutions", "released": 2003}}}
- {"m":{"id": 9,"labels": ["Movie"],"properties": {"tagline": "Free your mind", "title": "The Matrix Reloaded", "released": 2003}}}
- {"m":{"id": 0,"labels": ["Movie"],"properties": {"tagline": "Welcome to the Real World", "title": "The Matrix", "released": 1999}}}
+cypher
+{"m":{"id": 10,"labels": ["Movie"],"properties": {"tagline": "Everything that has a beginning has an end", "title": "The Matrix Revolutions", "released": 2003}}}
+{"m":{"id": 9,"labels": ["Movie"],"properties": {"tagline": "Free your mind", "title": "The Matrix Reloaded", "released": 2003}}}
+{"m":{"id": 0,"labels": ["Movie"],"properties": {"tagline": "Welcome to the Real World", "title": "The Matrix", "released": 1999}}}
 (3 rows)
-
 SELECT name, born  FROM cypher('MATCH (p:Person)-[r:ACTED_IN]->(m:Movie) WHERE m.title=$movie RETURN p.name AS name, p.born AS born','{"movie":"The Matrix"}') , json_to_record(cypher) as x(name varchar, born smallint)
-        name        | born 
---------------------+------
- Emil Eifrem        | 1978
- Hugo Weaving       | 1960
- Laurence Fishburne | 1961
- Carrie-Anne Moss   | 1967
- Keanu Reeves       | 1964
+name|born
+Emil Eifrem|1978
+Hugo Weaving|1960
+Laurence Fishburne|1961
+Carrie-Anne Moss|1967
+Keanu Reeves|1964
 (5 rows)
-

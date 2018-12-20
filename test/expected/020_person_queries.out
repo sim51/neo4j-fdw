@@ -1,42 +1,33 @@
+\a
 SELECT * FROM person LIMIT 10;
- id |        name        | born 
-----+--------------------+------
-  1 | Keanu Reeves       | 1964
-  2 | Carrie-Anne Moss   | 1967
-  3 | Laurence Fishburne | 1961
-  4 | Hugo Weaving       | 1960
-  5 | Lilly Wachowski    | 1967
-  6 | Lana Wachowski     | 1965
-  7 | Joel Silver        | 1952
-  8 | Emil Eifrem        | 1978
- 12 | Charlize Theron    | 1975
- 13 | Al Pacino          | 1940
+id|name|born
+1|Keanu Reeves|1964
+2|Carrie-Anne Moss|1967
+3|Laurence Fishburne|1961
+4|Hugo Weaving|1960
+5|Lilly Wachowski|1967
+6|Lana Wachowski|1965
+7|Joel Silver|1952
+8|Emil Eifrem|1978
+12|Charlize Theron|1975
+13|Al Pacino|1940
 (10 rows)
-
 SELECT * FROM person p WHERE p.born > 1980 ORDER BY p.born DESC LIMIT 10;
- id  |       name        | born 
------+-------------------+------
-  44 | Jonathan Lipnicki | 1996
- 122 | Emile Hirsch      | 1985
- 127 | Rain              | 1982
- 117 | Natalie Portman   | 1981
+id|name|born
+44|Jonathan Lipnicki|1996
+122|Emile Hirsch|1985
+127|Rain|1982
+117|Natalie Portman|1981
 (4 rows)
-
 SELECT * FROM person p WHERE p.name = 'Keanu Reeves';
- id |     name     | born 
-----+--------------+------
-  1 | Keanu Reeves | 1964
+id|name|born
+1|Keanu Reeves|1964
 (1 row)
-
 SELECT * FROM person p WHERE p.name LIKE '%Keanu%';
- id |     name     | born 
-----+--------------+------
-  1 | Keanu Reeves | 1964
+id|name|born
+1|Keanu Reeves|1964
 (1 row)
-
 SELECT * FROM person p WHERE p.name ILIKE '%keanu%';
- id |     name     | born 
-----+--------------+------
-  1 | Keanu Reeves | 1964
+id|name|born
+1|Keanu Reeves|1964
 (1 row)
-

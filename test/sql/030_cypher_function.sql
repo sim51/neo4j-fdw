@@ -1,3 +1,4 @@
+\a
 SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS ''The Matrix'' RETURN m ORDER BY m.released DESC');
 SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS "The Matrix" RETURN m ORDER BY m.released DESC');
 SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS $search RETURN m ORDER BY m.released DESC','{''search'':''Matrix''}');

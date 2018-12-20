@@ -1,3 +1,4 @@
+\a
 SELECT * FROM person LIMIT 10;
 SELECT * FROM person p WHERE p.born > 1980 ORDER BY p.born DESC LIMIT 10;
 SELECT * FROM person p WHERE p.name = 'Keanu Reeves';
