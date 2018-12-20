@@ -276,3 +276,8 @@ Then you just have to run  the `./tests.sh` script.
 == More Examples
 
 If you want to see more examples, just take a llok at the folder `test/sql/sql`
+
+== kb
+
+* To enable log in postgres : `SET client_min_messages = DEBUG`
+* To enable query log in Neo4j : `CALL dbms.setConfigValue("dbms.logs.query.enabled", "true")`
