@@ -46,6 +46,7 @@ py.test
 RESULT=$?
 if [ $RESULT -gt 0 ]; then
   echo "Some python tests failed"
+  docker-compose down
   exit 1
 fi
 
@@ -61,16 +62,8 @@ echo "~ Execute pg_regress tests"
 docker exec -it fdw-pg /source/scripts/pg_regress.sh /source/test
 if [ $? -gt 0 ]; then
   echo "Some regress test failed"
+  docker-compose down
   exit 1
 fi
 
-####################################################################
-# After all tests
-####################################################################
-echo "~~~"
-echo "~ After all tests"
-echo "~~~"
-echo
-
-echo "~ Stop docker containers"
 docker-compose down

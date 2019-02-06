@@ -114,20 +114,41 @@ CREATE FOREIGN TABLE neo4j_movie (
   );
 ----
 
-=== What does it do to reduce the amount of fetched data ?
+=== Filtering the data
 
 `quals` are pushed to the remote database when it's possible. This include simple operators like :
 
  * equality, inequality (=, <>, >, <, <=, >=)
  * like, ilike and their negations
 
-=== Usage example
+If you have defined your foreign table with this query `MATCH (n:Movie) RETURN n.title as movie`,
+this FDW will push all your WHERE clause directly to Neo4j by generating a cypher query that looks like to this : `MATCH (n:Movie) WITH n.title as movie WHERE ... RETURN movie`;
 
-[source, sql]
+In fact it replaces the `RETURN` part of your query by a `WITH ... WHERE ... RETURN`.
+It works, but it's not optimised ...
+
+To optimise the `WHERE` clause in the generated cypher query, you can define a *WHERE placeholder* in the cypher definition of your foreign table
+
+Example :
+
 ----
-mydatabase=#
-SELECT * FROM neo4j_movie WHERE movie LIKE 'Matr%';
+CREATE FOREIGN TABLE actedIn (
+    actor varchar NOT NULL,
+    born smallint,
+    movie varchar NOT NULL
+  ) SERVER multicorn_neo4j OPTIONS (
+    cypher 'MATCH (p:Person) /*WHERE{"actor":"p.name", "born":"p.born"}*/  WITH p MATCH (p)-[:ACTED_IN]->(m:Movie) /*WHERE{"movie":"m.title"}*/ RETURN p.name AS actor, p.born AS born, m.title AS movie'
+  );
 ----
+
+In this example you can see two where placeholders : `/*WHERE{"actor":"p.name", "born":"p.born"}*/` & `/*WHERE{"movie":"m.title"}*/`
+A placeholder is defined by (respect the) cast: `/*WHERE{ ... }*/`
+Then inside, you have to define the cypher field name of the SQL field.
+
+With those information, the plugin know how to put the where clause in your cypher query.
+
+So this SQL query `SELECT * FROM actedIn WHERE born > 1980 AND movie = "The Matrix"` will generate this cypher query :
+`MATCH (p:Person) WHERE p.born > 1980 WITH p MATCH (p)-[:ACTED_IN]->(m:Movie) WHERE m.title = "The Matrix" RETURN p.name AS actor, p.born AS born, m.title AS movie`
 
 == Make cypher query into a sql select
 
@@ -267,15 +288,14 @@ SELECT year, id  FROM cypher('MATCH (y:Year)<-[r]-(m) RETURN y.value AS year, m.
 (10 lignes)
 ----
 
-
 == Run test
 
 You need to have **docker compose** installed.
-Then you just have to run  the `./tests.sh` script.
+Then you just have to run  the `./scripts/tests.sh` script.
 
 == More Examples
 
-If you want to see more examples, just take a llok at the folder `test/sql/sql`
+If you want to see more examples, just take a look in folder `test/sql`
 
 == kb
 

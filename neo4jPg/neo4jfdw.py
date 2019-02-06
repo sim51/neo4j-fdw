@@ -1,7 +1,9 @@
+import sys
+import re
+import json
 from multicorn import ForeignDataWrapper, ANY, ALL
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG, INFO
 from neo4j import GraphDatabase, basic_auth, CypherError
-import re
 
 class Neo4jForeignDataWrapper(ForeignDataWrapper):
     """
@@ -43,9 +45,11 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         log_to_postgres('Query Filters:  %s' % quals, DEBUG)
 
         statement = self.make_cypher(quals, columns, sortkeys)
+
         params = {}
-        for index, qual in enumerate(quals):
-            params[unicode(index)] = qual.value
+        for qual in quals:
+            params[unicode(qual.field_name)] = qual.value
+
         log_to_postgres('Neo4j query is : ' + unicode(statement), DEBUG)
         log_to_postgres('With params : ' + unicode(params), DEBUG)
 
@@ -55,6 +59,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
             for record in session.run(statement, params):
                 line = {}
                 for column_name in columns:
+                    # TODO: from neo4j type to pg types
                     line[column_name] = record[column_name]
                 yield line
         except CypherError:
@@ -68,15 +73,42 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         Override cypher query to add search criteria
         """
         cypher = self.cypher
-        where_clause = ' AND '.join(self.extract_conditions(quals))
-        log_to_postgres('Where clause is : ' + unicode(where_clause), DEBUG)
 
-        pattern = re.compile('(.*)RETURN(.*)', re.IGNORECASE|re.MULTILINE|re.DOTALL)
-        match = pattern.match(self.cypher)
+        if(quals is not None and len(quals) > 0):
 
-        if len(where_clause) > 0 and match:
-            cypher = match.group(1) + "WITH" + match.group(2) + " WHERE " + where_clause + " RETURN " + ', '.join(columns)
+            # Step 1 : we check if there is some `where` annotation in the query
+            where_match = re.findall('/\*WHERE([^}]*})\*/', self.cypher)
+            if(where_match is not None):
+              for group in where_match:
+                  log_to_postgres('Find a custom WHERE clause : ' + unicode(group), DEBUG)
+                  group_where_condition = []
+                  # parse the JSON and check if field are in the where clause
+                  # if so we replace it and remove the clause from the where
+                  where_config = json.loads(group)
+                  for field in where_config:
+                      fieldQuals = filter(lambda qual: qual.field_name == field, quals)
+                      if (len(fieldQuals) > 0):
+                          for qual in fieldQuals:
+                              log_to_postgres('Find a field for this custom WHERE clause : ' + unicode(qual), DEBUG)
+                              # Generate the condition
+                              group_where_condition.append(self.generate_condition(where_config[qual.field_name], qual.operator, qual.value, '`' + qual.field_name + '`'))
+                              # Remove the qual from the initial qual list
+                              quals = filter(lambda qual: not qual.field_name == field, quals)
 
+                  # replace the captured group by the condition
+                  cypher = cypher.replace('/*WHERE' + group + '*/', ' WHERE ' + ' AND '.join(group_where_condition))
+                  log_to_postgres('Current cypher query is : ' + unicode(cypher), DEBUG)
+
+            # Step 2 : if there is still some where clause, we replace the return by a with/where/return
+            if(len(quals) > 0):
+                log_to_postgres('Generic where clause', DEBUG)
+                where_clauses = self.generate_where_conditions(quals)
+                pattern = re.compile('(.*)RETURN(.*)', re.IGNORECASE|re.MULTILINE|re.DOTALL)
+                match = pattern.match(cypher)
+                cypher = match.group(1) + "WITH" + match.group(2) + " WHERE " + ' AND '.join(where_clauses) + " RETURN " + ', '.join(columns)
+                log_to_postgres('Current cypher query after generic where is : ' + unicode(cypher), DEBUG)
+
+        # Step 3 : We add the order clause at the end of the query
         if sortkeys is not None:
             orders = []
             for sortkey in sortkeys:
@@ -85,38 +117,42 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
                 else:
                     orders.append(sortkey.attname)
             cypher = cypher + ' ORDER BY ' + ', '.join(orders)
+            log_to_postgres('Current cypher query after sort is : ' + unicode(cypher), DEBUG)
 
         return cypher
 
 
-    def extract_conditions(self, quals):
+    def generate_where_conditions(self, quals):
         """
         Build a neo4j search criteria string from a list of quals
         """
         conditions = []
         for index, qual in enumerate(quals):
+
             # quals is a list with ANY
             if qual.list_any_or_all == ANY:
                 values = [
-                    '( %s )' % self.make_condition(qual.field_name, qual.operator[0], value, unicode(index) + '[' + unicode(array_index) + ']')
+                    '( %s )' % self.generate_condition(qual.field_name, qual.operator[0], value, '`' + unicode(qual.field_name) + '`' + '[' + unicode(array_index) + ']')
                     for array_index, value in enumerate(qual.value)
                 ]
                 conditions.append( ' ( ' +  ' OR '.join(values) + ' ) ')
+
             # quals is a list with ALL
             elif qual.list_any_or_all == ALL:
                 conditions.extend([
-                    self.make_condition(qual.field_name, qual.operator[0], value, unicode(index) + '[' + unicode(array_index) + ']')
+                    self.generate_condition(qual.field_name, qual.operator[0], value, '`' + unicode(qual.field_name) + '`' + '[' + unicode(array_index) + ']')
                     for array_index, value in enumerate(qual.value)
                 ])
+
             # quals is just a string
             else:
-                conditions.append(self.make_condition( qual.field_name, qual.operator, qual.value, index))
+                conditions.append(self.generate_condition( qual.field_name, qual.operator, qual.value, '`' + unicode(qual.field_name) + '`'))
 
         conditions = [x for x in conditions if x not in (None, '()', '')]
         return conditions
 
 
-    def make_condition(self, field_name, operator, value, index):
+    def generate_condition(self, field_name, operator, value, cypher_variable):
         """
         Build a neo4j condition from a qual
         """
@@ -140,7 +176,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
             condition += regex + "' "
 
         else:
-            condition = field_name + ' ' + operator + "$" + unicode(index) + ""
+            condition = field_name +  operator + "$" + unicode(cypher_variable)
 
         log_to_postgres('Condition is : ' + unicode(condition), DEBUG)
         return condition

@@ -509,3 +509,20 @@ CREATE
   (JessicaThompson)-[:REVIEWED {summary:'A solid romp', rating:68}]->(TheDaVinciCode),
   (JamesThompson)-[:REVIEWED {summary:'Fun, but a little far fetched', rating:65}]->(TheDaVinciCode),
   (JessicaThompson)-[:REVIEWED {summary:'You had me at Jerry', rating:92}]->(JerryMaguire);
+
+
+CREATE (n:TemporalNode {
+  date: date("2018-04-05"),
+  time: time("12:45:30.25+01:00"),
+  localtime: localtime("12:45:30.25"),
+  datetime:datetime("2018-04-05T12:34:00[Europe/Berlin]"),
+  localdatetime:localdatetime("2018-04-05T12:34:00"),
+  duration: duration("P1Y2M10DT12H45M30.25S")
+});
+
+CREATE (n:SpatialNode {
+  point2d: point({x: 1, y: 2}),
+  point3d: point({x: 1, y:2, z:3}),
+  geo2d: point({latitude: 1.051, longitude: 2.53}),
+  geo3d: point({latitude: 1.051, longitude: 2.53, height:10.3})
+});
