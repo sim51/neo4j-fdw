@@ -141,14 +141,30 @@ CREATE FOREIGN TABLE actedIn (
   );
 ----
 
-In this example you can see two where placeholders : `/*WHERE{"actor":"p.name", "born":"p.born"}*/` & `/*WHERE{"movie":"m.title"}*/`
-A placeholder is defined by (respect the) cast: `/*WHERE{ ... }*/`
+In this example you can see two where placeholders : `/\*WHERE{"actor":"p.name", "born":"p.born"}*/` & `/\*WHERE{"movie":"m.title"}*/`
+
+A placeholder is defined by `/\*WHERE{ ... }*/` (please respect the cast, it's a strict match).
 Then inside, you have to define the cypher field name of the SQL field.
 
 With those information, the plugin know how to put the where clause in your cypher query.
 
-So this SQL query `SELECT * FROM actedIn WHERE born > 1980 AND movie = "The Matrix"` will generate this cypher query :
-`MATCH (p:Person) WHERE p.born > 1980 WITH p MATCH (p)-[:ACTED_IN]->(m:Movie) WHERE m.title = "The Matrix" RETURN p.name AS actor, p.born AS born, m.title AS movie`
+So this SQL query  :
+
+[source,sql]
+----
+SELECT * FROM actedIn WHERE born > 1980 AND movie = "The Matrix"
+----
+
+Will generate this cypher query :
+
+[source,cypher]
+----
+MATCH (p:Person) WHERE p.born > 1980 
+WITH p 
+MATCH (p)-[:ACTED_IN]->(m:Movie) 
+WHERE m.title = "The Matrix" 
+RETURN p.name AS actor, p.born AS born, m.title AS movie
+----
 
 == Make cypher query into a sql select
 
