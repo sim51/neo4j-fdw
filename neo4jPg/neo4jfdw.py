@@ -10,6 +10,8 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
     Neo4j FWD for Postgresql
     """
 
+    _startup_cost = 20
+
     def __init__(self, options, columns):
 
         # Calling super constructor
@@ -39,7 +41,28 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password))
 
         self.columns_stat = self.compute_columns_stat()
+        self.table_stat = self.compute_table_stat();
 
+
+    def get_rel_size(self, quals, columns):
+        """
+        This method must return a tuple of the form (expected_number_of_row, expected_mean_width_of_a_row (in bytes)).
+        The quals and columns arguments can be used to compute those estimates.
+        For example, the imapfdw computes a huge width whenever the payload column is requested.
+        """
+        log_to_postgres('get_rel_size is called', DEBUG)
+        # TODO: take the min of the columns stat based on the quals ?
+        return (self.table_stat, len(columns)*100)
+
+    def get_path_keys(self):
+        """
+        This method must return a list of tuple of the form (column_name, expected_number_of_row).
+        The expected_number_of_row must be computed as if a where column_name = some_value filter were applied.
+        This helps the planner to estimate parameterized paths cost, and change the plan accordingly.
+        For example, informing the planner that a filter on a column may return exactly one row, instead of the full billion, may help it on deciding to use a nested-loop instead of a full sequential scan.
+        """
+        log_to_postgres('get_path_keys is called', DEBUG)
+        return self.columns_stat
 
     def execute(self, quals, columns, sortkeys=None):
 
@@ -68,7 +91,6 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
             raise RuntimeError("Bad cypher query : " + statement)
         finally:
             session.close()
-
 
     def make_cypher(self, quals, columns, sortkeys):
         """
@@ -195,12 +217,6 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         return condition
 
     def compute_columns_stat(self):
-        """
-        This method must return a list of tuple of the form (column_name, expected_number_of_row).
-        The expected_number_of_row must be computed as if a where column_name = some_value filter were applied.
-        This helps the planner to estimate parameterized paths cost, and change the plan accordingly.
-        For example, informing the planner that a filter on a column may return exactly one row, instead of the full billion, may help it on deciding to use a nested-loop instead of a full sequential scan.
-        """
         result = list();
 
         session = self.driver.session()
@@ -213,9 +229,9 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
                 stats = explain_summary['EstimatedRows']
 
                 log_to_postgres('Explain query for column ' + unicode(column_name) + ' is : ' + unicode(query), DEBUG)
-                log_to_postgres('Explain for column ' + unicode(column_name) + ' is : ' + unicode(explain_summary['EstimatedRows']), DEBUG)
+                log_to_postgres('Stat for column ' + unicode(column_name) + ' is : ' + unicode(explain_summary['EstimatedRows']), DEBUG)
 
-                result.append((column_name, stats))
+                result.append(((column_name,), int(stats)))
 
         except CypherError:
             raise RuntimeError("Bad cypher query : " + query)
@@ -225,12 +241,19 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         log_to_postgres('Columns stats are :' + unicode(result), DEBUG)
         return result
 
-        def get_path_keys(self):
-            return self.columns_stat
+    def compute_table_stat(self):
+        stats = 100000000
+        session = self.driver.session()
+        try:
+            rs = session.run('EXPLAIN ' + self.cypher, {})
+            explain_summary = rs.summary().plan[2]
+            stats = explain_summary['EstimatedRows']
+            log_to_postgres('Stat for table is ' + unicode(explain_summary['EstimatedRows']), DEBUG)
+        except CypherError:
+            raise RuntimeError("Bad cypher query : " + cypher)
+        finally:
+            session.close()
 
+        log_to_postgres('Table stat is :' + unicode(stats), DEBUG)
+        return stats
 
-# def get_rel_size(self, quals, columns):
-
-# def insert(self, new_values):
-# def update(self, old_values, new_values):
-# def delete(self, old_values):
