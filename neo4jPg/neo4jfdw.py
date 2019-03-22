@@ -41,7 +41,10 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password))
 
         self.columns_stat = self.compute_columns_stat()
-        self.table_stat = self.compute_table_stat();
+        self.table_stat = int(options.get("estimated_rows", -1))
+        if(self.table_stat < 0):
+            self.table_stat = self.compute_table_stat()
+        log_to_postgres('Table estimated rows : ' + unicode(self.table_stat), DEBUG)
 
 
     def get_rel_size(self, quals, columns):

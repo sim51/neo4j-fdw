@@ -318,3 +318,5 @@ If you want to see more examples, just take a look in folder `test/sql`
 * To enable log in postgres : `SET client_min_messages = DEBUG`
 * To enable query log in Neo4j : `CALL dbms.setConfigValue("dbms.logs.query.enabled", "true")`
 * To open an `psql` session on the database `neo4j` with debug messages : `env PGOPTIONS='-c client_min_messages=DEBUG' psql neo4j`
+* Alter an option of foreign table (replace ADD by SET or DROP): `ALTER FOREIGN TABLE actedin OPTIONS ( ADD estimated_rows '-1');`
+* Display the detail of a table : `\d+ person`
