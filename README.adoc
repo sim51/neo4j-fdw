@@ -159,10 +159,10 @@ Will generate this cypher query :
 
 [source,cypher]
 ----
-MATCH (p:Person) WHERE p.born > 1980 
-WITH p 
-MATCH (p)-[:ACTED_IN]->(m:Movie) 
-WHERE m.title = "The Matrix" 
+MATCH (p:Person) WHERE p.born > 1980
+WITH p
+MATCH (p)-[:ACTED_IN]->(m:Movie)
+WHERE m.title = "The Matrix"
 RETURN p.name AS actor, p.born AS born, m.title AS movie
 ----
 
