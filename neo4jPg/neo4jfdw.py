@@ -108,7 +108,12 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
                 cypher = match.group(1) + "WITH" + match.group(2) + " WHERE " + ' AND '.join(where_clauses) + " RETURN " + ', '.join(columns)
                 log_to_postgres('Current cypher query after generic where is : ' + unicode(cypher), DEBUG)
 
-        # Step 3 : We add the order clause at the end of the query
+        # Step 3 : We construct the projection for the return
+        return_pattern = re.compile('(.*)RETURN(.*)', re.IGNORECASE|re.MULTILINE|re.DOTALL)
+        return_match = return_pattern.match(cypher)
+        cypher = return_match.group(1) + "WITH" + return_match.group(2) + " RETURN " + ', '.join(columns)
+
+        # Step 4 : We add the order clause at the end of the query
         if sortkeys is not None:
             orders = []
             for sortkey in sortkeys:
