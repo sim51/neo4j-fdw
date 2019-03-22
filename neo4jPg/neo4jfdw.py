@@ -186,6 +186,9 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         log_to_postgres('Condition is : ' + unicode(condition), DEBUG)
         return condition
 
+# def get_rel_size(self, quals, columns):
+# def get_path_keys(self):
+
 # def insert(self, new_values):
 # def update(self, old_values, new_values):
 # def delete(self, old_values):
