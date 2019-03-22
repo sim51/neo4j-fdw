@@ -1,7 +1,7 @@
 import sys
 import re
 import json
-from multicorn import ForeignDataWrapper, ANY, ALL
+from multicorn import ForeignDataWrapper, Qual, ANY, ALL
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG, INFO
 from neo4j import GraphDatabase, basic_auth, CypherError
 
@@ -38,6 +38,8 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         # Create a neo4j driver instance
         self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password))
 
+        self.columns_stat = self.compute_columns_stat()
+
 
     def execute(self, quals, columns, sortkeys=None):
 
@@ -72,7 +74,9 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         """
         Override cypher query to add search criteria
         """
-        cypher = self.cypher
+        query = self.cypher
+        log_to_postgres('Init cypher query is : ' + unicode(query), DEBUG)
+        log_to_postgres('Quals are : ' + unicode(quals), DEBUG)
 
         if(quals is not None and len(quals) > 0):
 
@@ -82,6 +86,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
               for group in where_match:
                   log_to_postgres('Find a custom WHERE clause : ' + unicode(group), DEBUG)
                   group_where_condition = []
+
                   # parse the JSON and check if field are in the where clause
                   # if so we replace it and remove the clause from the where
                   where_config = json.loads(group)
@@ -96,22 +101,25 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
                               quals = filter(lambda qual: not qual.field_name == field, quals)
 
                   # replace the captured group by the condition
-                  cypher = cypher.replace('/*WHERE' + group + '*/', ' WHERE ' + ' AND '.join(group_where_condition))
-                  log_to_postgres('Current cypher query is : ' + unicode(cypher), DEBUG)
+                  if (len(group_where_condition) > 0):
+                      query = query.replace('/*WHERE' + group + '*/', ' WHERE ' + ' AND '.join(group_where_condition))
+                  else:
+                      query = query.replace('/*WHERE' + group + '*/', '')
+                  log_to_postgres('Current cypher query is : ' + unicode(query), DEBUG)
 
             # Step 2 : if there is still some where clause, we replace the return by a with/where/return
             if(len(quals) > 0):
                 log_to_postgres('Generic where clause', DEBUG)
                 where_clauses = self.generate_where_conditions(quals)
                 pattern = re.compile('(.*)RETURN(.*)', re.IGNORECASE|re.MULTILINE|re.DOTALL)
-                match = pattern.match(cypher)
-                cypher = match.group(1) + "WITH" + match.group(2) + " WHERE " + ' AND '.join(where_clauses) + " RETURN " + ', '.join(columns)
-                log_to_postgres('Current cypher query after generic where is : ' + unicode(cypher), DEBUG)
+                match = pattern.match(query)
+                query = match.group(1) + "WITH" + match.group(2) + " WHERE " + ' AND '.join(where_clauses) + " RETURN " + ', '.join(columns)
+                log_to_postgres('Current cypher query after generic where is : ' + unicode(query), DEBUG)
 
         # Step 3 : We construct the projection for the return
         return_pattern = re.compile('(.*)RETURN(.*)', re.IGNORECASE|re.MULTILINE|re.DOTALL)
-        return_match = return_pattern.match(cypher)
-        cypher = return_match.group(1) + "WITH" + return_match.group(2) + " RETURN " + ', '.join(columns)
+        return_match = return_pattern.match(query)
+        query = return_match.group(1) + "WITH" + return_match.group(2) + " RETURN " + ', '.join(columns)
 
         # Step 4 : We add the order clause at the end of the query
         if sortkeys is not None:
@@ -121,10 +129,10 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
                     orders.append(sortkey.attname + ' DESC')
                 else:
                     orders.append(sortkey.attname)
-            cypher = cypher + ' ORDER BY ' + ', '.join(orders)
-            log_to_postgres('Current cypher query after sort is : ' + unicode(cypher), DEBUG)
+            query = query + ' ORDER BY ' + ', '.join(orders)
+            log_to_postgres('Current cypher query after sort is : ' + unicode(query), DEBUG)
 
-        return cypher
+        return query
 
 
     def generate_where_conditions(self, quals):
@@ -186,8 +194,42 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         log_to_postgres('Condition is : ' + unicode(condition), DEBUG)
         return condition
 
+    def compute_columns_stat(self):
+        """
+        This method must return a list of tuple of the form (column_name, expected_number_of_row).
+        The expected_number_of_row must be computed as if a where column_name = some_value filter were applied.
+        This helps the planner to estimate parameterized paths cost, and change the plan accordingly.
+        For example, informing the planner that a filter on a column may return exactly one row, instead of the full billion, may help it on deciding to use a nested-loop instead of a full sequential scan.
+        """
+        result = list();
+
+        session = self.driver.session()
+        try:
+            for column_name in self.columns:
+                quals = [Qual(column_name, '=', 'WHATEVER')];
+                query = 'EXPLAIN ' + self.make_cypher(quals, self.columns, None)
+                rs = session.run(query, {})
+                explain_summary = rs.summary().plan[2]
+                stats = explain_summary['EstimatedRows']
+
+                log_to_postgres('Explain query for column ' + unicode(column_name) + ' is : ' + unicode(query), DEBUG)
+                log_to_postgres('Explain for column ' + unicode(column_name) + ' is : ' + unicode(explain_summary['EstimatedRows']), DEBUG)
+
+                result.append((column_name, stats))
+
+        except CypherError:
+            raise RuntimeError("Bad cypher query : " + query)
+        finally:
+            session.close()
+
+        log_to_postgres('Columns stats are :' + unicode(result), DEBUG)
+        return result
+
+        def get_path_keys(self):
+            return self.columns_stat
+
+
 # def get_rel_size(self, quals, columns):
-# def get_path_keys(self):
 
 # def insert(self, new_values):
 # def update(self, old_values, new_values):
