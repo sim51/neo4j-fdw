@@ -1,6 +1,7 @@
 import sys
 import re
 import json
+import datetime
 from multicorn import ForeignDataWrapper, Qual, ANY, ALL
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG, INFO
 from neo4j import GraphDatabase, basic_auth, CypherError
@@ -76,7 +77,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
         params = {}
         for qual in quals:
-            params[unicode(qual.field_name)] = qual.value
+            params[unicode(qual.field_name)] = self.convert_to_neo4j(self.columns[qual.field_name], qual.value)
 
         log_to_postgres('Neo4j query is : ' + unicode(statement), DEBUG)
         log_to_postgres('With params : ' + unicode(params), DEBUG)
@@ -88,7 +89,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
                 line = {}
                 for column_name in columns:
                     # TODO: from neo4j type to pg types
-                    line[column_name] = record[column_name]
+                    line[column_name] = self.convert_to_pg(self.columns[column_name], record[column_name])
                 yield line
         except CypherError:
             raise RuntimeError("Bad cypher query : " + statement)
@@ -259,4 +260,68 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
         log_to_postgres('Table stat is :' + unicode(stats), DEBUG)
         return stats
+
+    def convert_to_pg(self, column, value):
+        """
+        Convert a value to a PG type.
+        We do nothing for now, but can be usefull for the futur
+        """
+        log_to_postgres('Convert column:' + unicode(column), DEBUG)
+        return value
+
+    def convert_to_neo4j(self, column, value):
+        """
+        Convert the value to the adequate a Neo4j type.
+        This is used for the quals.
+        """
+        result = value
+        log_to_postgres('Convert for neo4j column type:' + unicode(column.type_name), DEBUG)
+
+        # we want a date
+        if column.type_name == 'date':
+            if isinstance(value, datetime.datetime):
+                result = value.date()
+            elif isinstance(value, datetime.date):
+                result = value
+            else:
+                log_to_postgres('Value ' + unicode(value) + ' can not be compared with a field of type ' +  column.type, DEBUG)
+
+        # we want a time
+        elif column.type_name == 'time':
+            # remove the timezone !
+            if isinstance(value, datetime.time):
+                result = value.replace(tzinfo=None)
+            elif isinstance(value, datetime.datetime):
+                result = value.replace(tzinfo=None).time()
+            else:
+                log_to_postgres('Value ' + unicode(value) + ' can not be compared with a field of type ' +  column.type, DEBUG)
+
+        elif column.type_name == 'time with time zone':
+            # Add the timezone if needed
+            if isinstance(value, datetime.time):
+                result = value
+            elif isinstance(value, datetime.datetime):
+                result = value.time()
+            else:
+                log_to_postgres('Value ' + unicode(value) + ' can not be compared with a field of type ' +  column.type, DEBUG)
+
+        elif column.type_name == 'timestamp with time zone':
+            # Add the timezone if needed
+            if isinstance(value, datetime.datetime):
+                result = value
+            elif isinstance(value, datetime.date):
+                result = value #TODO: change the date to a datetime with default time + default T
+            else:
+                log_to_postgres('Value ' + unicode(value) + ' can not be compared with a field of type ' +  column.type, DEBUG)
+
+        elif column.type_name == 'timestamp':
+            # Add the timezone if needed
+            if isinstance(value, datetime.datetime):
+                result = value
+            elif isinstance(value, datetime.date):
+                result = value #TODO: change the date to a datetime with default time + default T
+            else:
+                log_to_postgres('Value ' + unicode(value) + ' can not be compared with a field of type ' +  column.type, DEBUG)
+
+        return result
 

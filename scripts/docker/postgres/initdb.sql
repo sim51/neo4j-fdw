@@ -28,6 +28,18 @@ CREATE FOREIGN TABLE actedIn (
   ) SERVER multicorn_neo4j OPTIONS (
     cypher 'MATCH (p:Person)-[r:ACTED_IN]->(m:Movie) RETURN id(r) AS id, id(p) AS person_id, id(m) AS movie_id'
   );
+
+CREATE FOREIGN TABLE temporal (
+  my_date DATE,
+  my_localtime TIME,
+  my_time TIME WITH TIME ZONE,
+  my_datetime TIMESTAMP WITH TIME ZONE,
+  my_localdatetime TIMESTAMP,
+  my_duration INTERVAL
+  ) SERVER multicorn_neo4j OPTIONS (
+    cypher 'MATCH (n:TemporalNode) RETURN n.date AS my_date, n.time AS my_time, n.localtime AS my_localtime, n.datetime AS my_datetime, n.localdatetime AS my_localdatetime, n.duration AS my_duration'
+  );
+
 CREATE EXTENSION plpythonu;
 CREATE OR REPLACE FUNCTION cypher(query text) RETURNS SETOF json
 LANGUAGE plpythonu
