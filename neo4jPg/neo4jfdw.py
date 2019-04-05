@@ -122,7 +122,8 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
                           for qual in fieldQuals:
                               log_to_postgres('Find a field for this custom WHERE clause : ' + unicode(qual), DEBUG)
                               # Generate the condition
-                              group_where_condition.append(self.generate_condition(where_config[qual.field_name], qual.operator, qual.value, '`' + qual.field_name + '`'))
+                              customQual = Qual(where_config[qual.field_name], qual.operator, qual.value)
+                              group_where_condition.append(self.generate_condition(customQual, qual.field_name ))
                               # Remove the qual from the initial qual list
                               quals = filter(lambda qual: not qual.field_name == field, quals)
 
@@ -167,55 +168,64 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         """
         conditions = []
         for index, qual in enumerate(quals):
-
-            # quals is a list with ANY
-            if qual.list_any_or_all == ANY:
-                values = [
-                    '( %s )' % self.generate_condition(qual.field_name, qual.operator[0], value, '`' + unicode(qual.field_name) + '`' + '[' + unicode(array_index) + ']')
-                    for array_index, value in enumerate(qual.value)
-                ]
-                conditions.append( ' ( ' +  ' OR '.join(values) + ' ) ')
-
-            # quals is a list with ALL
-            elif qual.list_any_or_all == ALL:
-                conditions.extend([
-                    self.generate_condition(qual.field_name, qual.operator[0], value, '`' + unicode(qual.field_name) + '`' + '[' + unicode(array_index) + ']')
-                    for array_index, value in enumerate(qual.value)
-                ])
-
-            # quals is just a string
-            else:
-                conditions.append(self.generate_condition( qual.field_name, qual.operator, qual.value, '`' + unicode(qual.field_name) + '`'))
+            conditions.append( self.generate_condition( qual ) )
 
         conditions = [x for x in conditions if x not in (None, '()', '')]
         return conditions
 
 
-    def generate_condition(self, field_name, operator, value, cypher_variable):
+    def generate_condition(self, qual, cypher_variable=None):
         """
         Build a neo4j condition from a qual
         """
+
         condition = ''
-        if operator in ('~~', '!~~', '~~*', '!~~*'):
-            # Convert to cypher regex
-            regex = value.replace('%', '.*')
 
-            # For the negation, we prefix with NOT
-            if operator in ('!~~', '!~~*'):
-                condition += ' NOT '
-
-            # Adding the variable name
-            condition += field_name + " =~ '"
-
-            # If it's a ILIKE, we prefix regex with (?i)
-            if operator in ('~~*', '!~~*'):
-                condition += '(?i)'
-
-            # We add the regex
-            condition += regex + "' "
-
+        if cypher_variable is not None:
+            query_param_name = cypher_variable
         else:
-            condition = field_name +  operator + "$" + unicode(cypher_variable)
+            query_param_name = qual.field_name
+
+        # quals is a list with ANY
+        if qual.list_any_or_all == ANY:
+            values = [
+                '( %s )' % self.generate_condition(Qual(qual.field_name, qual.operator[0], value), '`' + unicode(query_param_name) + '`' + '[' + unicode(array_index) + ']')
+                for array_index, value in enumerate(qual.value)
+            ]
+            condition = ' ( ' +  ' OR '.join(values) + ' ) '
+
+        # quals is a list with ALL
+        elif qual.list_any_or_all == ALL:
+            conditions = [
+                self.generate_condition(Qual(qual.field_name, qual.operator[0], value), '`' + unicode(query_param_name) + '`' + '[' + unicode(array_index) + ']')
+                for array_index, value in enumerate(qual.value)
+            ]
+
+        # quals is just a string
+        else:
+            if qual.operator in ('~~', '!~~', '~~*', '!~~*'):
+                # Convert to cypher regex
+                regex = qual.value.replace('%', '.*')
+
+                # For the negation, we prefix with NOT
+                if qual.operator in ('!~~', '!~~*'):
+                    condition += ' NOT '
+
+                # Adding the variable name
+                condition += qual.field_name + " =~ '"
+
+                # If it's a ILIKE, we prefix regex with (?i)
+                if qual.operator in ('~~*', '!~~*'):
+                    condition += '(?i)'
+
+                # We add the regex
+                condition += regex + "' "
+
+            else:
+                if query_param_name.startswith('`'):
+                    condition = qual.field_name +  qual.operator + "$" + unicode(query_param_name)
+                else:
+                    condition = qual.field_name +  qual.operator + "$`" + unicode(query_param_name) + '`'
 
         log_to_postgres('Condition is : ' + unicode(condition), DEBUG)
         return condition

@@ -32,3 +32,23 @@ SELECT * FROM actedInWithCustomWheres WHERE movie = 'The Matrix' AND actor = 'Ke
 actor|movie
 Keanu Reeves|The Matrix
 (1 row)
+select * from actedInWithCustomWhere1 where actor IN ('Keanu Reeves','Thom Hamks');
+actor|movie
+Keanu Reeves|Something's Gotta Give
+Keanu Reeves|The Replacements
+Keanu Reeves|Johnny Mnemonic
+Keanu Reeves|The Devil's Advocate
+Keanu Reeves|The Matrix Revolutions
+Keanu Reeves|The Matrix Reloaded
+Keanu Reeves|The Matrix
+(7 rows)
+select * from actedInWithCustomWhere2 where actor IN ('Keanu Reeves','Thom Hamks');
+actor|movie
+Keanu Reeves|Something's Gotta Give
+Keanu Reeves|The Replacements
+Keanu Reeves|Johnny Mnemonic
+Keanu Reeves|The Devil's Advocate
+Keanu Reeves|The Matrix Revolutions
+Keanu Reeves|The Matrix Reloaded
+Keanu Reeves|The Matrix
+(7 rows)
