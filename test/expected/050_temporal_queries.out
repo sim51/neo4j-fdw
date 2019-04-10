@@ -1,0 +1,111 @@
+\a
+/* Date comparisons */
+SELECT * FROM temporal WHERE temporal.my_date > (DATE '1983-03-26');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_date < (DATE '1983-03-26');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_date = (DATE '1983-03-26');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+03-26-1983|12:45:30.25|12:45:30.25-07|Sat Mar 26 03:45:30.25 1983 PST|Sat Mar 26 12:45:30.25 1983|@ 1 year 2 mons 10 days 12 hours 45 mins 30.25 secs
+(1 row)
+SELECT * FROM temporal WHERE temporal.my_date < (DATE '1983-03-27');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+03-26-1983|12:45:30.25|12:45:30.25-07|Sat Mar 26 03:45:30.25 1983 PST|Sat Mar 26 12:45:30.25 1983|@ 1 year 2 mons 10 days 12 hours 45 mins 30.25 secs
+(1 row)
+SELECT * FROM temporal WHERE temporal.my_date > (TIMESTAMP '1983-03-26 12:45:30');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_date < (TIMESTAMP '1983-03-26 12:45:30');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_date < (TIMESTAMP '1983-03-27 12:45:30');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+03-26-1983|12:45:30.25|12:45:30.25-07|Sat Mar 26 03:45:30.25 1983 PST|Sat Mar 26 12:45:30.25 1983|@ 1 year 2 mons 10 days 12 hours 45 mins 30.25 secs
+(1 row)
+SELECT * FROM temporal WHERE temporal.my_date > (TIMESTAMPTZ '1983-03-26 12:45:30+01');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_date < (TIMESTAMPTZ '1983-03-26 12:45:30+01');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_date < (TIMESTAMPTZ '1983-03-27 12:45:30+01');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+03-26-1983|12:45:30.25|12:45:30.25-07|Sat Mar 26 03:45:30.25 1983 PST|Sat Mar 26 12:45:30.25 1983|@ 1 year 2 mons 10 days 12 hours 45 mins 30.25 secs
+(1 row)
+SELECT * FROM temporal WHERE temporal.my_date < (TIMESTAMPTZ '1983-03-26 20:45:30-05');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+/* Datetime without TZ comparisons */
+SELECT * FROM temporal WHERE temporal.my_localdatetime > (DATE '1983-03-26');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+03-26-1983|12:45:30.25|12:45:30.25-07|Sat Mar 26 03:45:30.25 1983 PST|Sat Mar 26 12:45:30.25 1983|@ 1 year 2 mons 10 days 12 hours 45 mins 30.25 secs
+(1 row)
+SELECT * FROM temporal WHERE temporal.my_localdatetime < (DATE '1983-03-27');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+03-26-1983|12:45:30.25|12:45:30.25-07|Sat Mar 26 03:45:30.25 1983 PST|Sat Mar 26 12:45:30.25 1983|@ 1 year 2 mons 10 days 12 hours 45 mins 30.25 secs
+(1 row)
+SELECT * FROM temporal WHERE temporal.my_localdatetime < now();
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+03-26-1983|12:45:30.25|12:45:30.25-07|Sat Mar 26 03:45:30.25 1983 PST|Sat Mar 26 12:45:30.25 1983|@ 1 year 2 mons 10 days 12 hours 45 mins 30.25 secs
+(1 row)
+SELECT * FROM temporal WHERE temporal.my_localdatetime < (TIMESTAMP '1983-03-26 12:45:30');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_localdatetime < (TIMESTAMP '1983-03-26 12:45:31');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+03-26-1983|12:45:30.25|12:45:30.25-07|Sat Mar 26 03:45:30.25 1983 PST|Sat Mar 26 12:45:30.25 1983|@ 1 year 2 mons 10 days 12 hours 45 mins 30.25 secs
+(1 row)
+SELECT * FROM temporal WHERE temporal.my_localdatetime < (TIMESTAMPTZ '1983-03-26 12:45:30+01');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_localdatetime < (TIMESTAMPTZ '1983-03-26 12:45:31-01');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+/* Datetime with TZ comparisons */
+SELECT * FROM temporal WHERE temporal.my_datetime > (DATE '1983-03-26');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+03-26-1983|12:45:30.25|12:45:30.25-07|Sat Mar 26 03:45:30.25 1983 PST|Sat Mar 26 12:45:30.25 1983|@ 1 year 2 mons 10 days 12 hours 45 mins 30.25 secs
+(1 row)
+SELECT * FROM temporal WHERE temporal.my_datetime < (DATE '1983-03-26');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_datetime < now();
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+03-26-1983|12:45:30.25|12:45:30.25-07|Sat Mar 26 03:45:30.25 1983 PST|Sat Mar 26 12:45:30.25 1983|@ 1 year 2 mons 10 days 12 hours 45 mins 30.25 secs
+(1 row)
+SELECT * FROM temporal WHERE temporal.my_datetime < (TIMESTAMP '1983-03-26 12:45:30');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+03-26-1983|12:45:30.25|12:45:30.25-07|Sat Mar 26 03:45:30.25 1983 PST|Sat Mar 26 12:45:30.25 1983|@ 1 year 2 mons 10 days 12 hours 45 mins 30.25 secs
+(1 row)
+SELECT * FROM temporal WHERE temporal.my_datetime < (TIMESTAMPTZ '1983-03-26 12:45:30+01');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+/* Time with TZ comparisons */
+SELECT * FROM temporal WHERE temporal.my_localtime = (TIME '12:45:30.25');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+03-26-1983|12:45:30.25|12:45:30.25-07|Sat Mar 26 03:45:30.25 1983 PST|Sat Mar 26 12:45:30.25 1983|@ 1 year 2 mons 10 days 12 hours 45 mins 30.25 secs
+(1 row)
+SELECT * FROM temporal WHERE temporal.my_localtime < (TIME '12:45:30.25');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_localtime < (TIMETZ '12:45:30.25+01');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_localtime < (TIMETZ '12:45:30.25-01');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+/* Time without TZ comparisons */
+SELECT * FROM temporal WHERE temporal.my_time = (TIME '12:45:30.25');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_time < (TIME '12:46:30.25');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_time < (TIMETZ '12:45:30.25+01');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)
+SELECT * FROM temporal WHERE temporal.my_time < (TIMETZ '13:46:30.25+01');
+my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
+(0 rows)

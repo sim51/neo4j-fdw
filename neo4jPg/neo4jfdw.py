@@ -1,7 +1,9 @@
 import sys
+import pytz
 import re
 import json
 import datetime
+from dateutil import parser
 from multicorn import ForeignDataWrapper, Qual, ANY, ALL
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG, INFO
 from neo4j import GraphDatabase, basic_auth, CypherError
@@ -90,6 +92,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
                 for column_name in columns:
                     # TODO: from neo4j type to pg types
                     line[column_name] = self.convert_to_pg(self.columns[column_name], record[column_name])
+                log_to_postgres("sending result item to PG : " + unicode(line),  DEBUG)
                 yield line
         except CypherError:
             raise RuntimeError("Bad cypher query : " + statement)
@@ -276,62 +279,132 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         Convert a value to a PG type.
         We do nothing for now, but can be usefull for the futur
         """
-        log_to_postgres('Convert column:' + unicode(column), DEBUG)
+        #log_to_postgres('Convert column:' + unicode(column), DEBUG)
         return value
 
     def convert_to_neo4j(self, column, value):
         """
-        Convert the value to the adequate a Neo4j type.
+        Convert the value to the adequate Neo4j type.
         This is used for the quals.
+
+        PG datetime types :
+        @see https://www.postgresql.org/docs/current/datatype-datetime.html
+        ------------------------------
+         * timestamp with/without TZ
+         * date
+         * time with/without TZ
+
+        Python datetime types :
+        @see https://docs.python.org/2/library/datetime.html
+        ------------------------------
+         * datetime with/without TZ
+         * date
+         * time with/without TZ
+
+        Neo4j datetime types :
+        @see https://neo4j.com/docs/cypher-manual/3.5/syntax/temporal/
+        ------------------------------
+         * datetime & LocalDateTime
+         * date
+         * time & LocalTime
+
+         /!\ It seems that Multicorn doesn't support time convertion as well as `now()`
         """
         result = value
-        log_to_postgres('Convert for neo4j column type:' + unicode(column.type_name), DEBUG)
+        log_to_postgres('Convert '+ unicode(value)+ ' for neo4j column type:' + unicode(column.type_name), DEBUG)
 
         # we want a date
         if column.type_name == 'date':
+            # if we have a datetime, we only take the date
             if isinstance(value, datetime.datetime):
                 result = value.date()
+            # if we have a date, it's perfect !
             elif isinstance(value, datetime.date):
                 result = value
             else:
-                log_to_postgres('Value ' + unicode(value) + ' can not be compared with a field of type ' +  column.type, DEBUG)
+                # else we try to parse the string ...
+                try:
+                    parsed = parser.parse(unicode(value))
+                    if parsed.tzinfo is not None:
+                        parsed = parsed.replace(tzinfo=None)
+                    result = parsed.date()
+                except Exception as e:
+                    log_to_postgres('Value ' + unicode(value) + ' of type ' + unicode(type(value)) + ' can not be compared with a date type field => ' +  unicode(e), ERROR)
 
-        # we want a time
-        elif column.type_name == 'time':
-            # remove the timezone !
-            if isinstance(value, datetime.time):
-                result = value.replace(tzinfo=None)
-            elif isinstance(value, datetime.datetime):
+        # we want a time without timezone
+        elif column.type_name == 'time without time zone':
+            # if we have a datetime, we only take the time
+            if isinstance(value, datetime.datetime):
                 result = value.replace(tzinfo=None).time()
-            else:
-                log_to_postgres('Value ' + unicode(value) + ' can not be compared with a field of type ' +  column.type, DEBUG)
-
-        elif column.type_name == 'time with time zone':
-            # Add the timezone if needed
-            if isinstance(value, datetime.time):
+            # if we have a time, it's perfect !
+            elif isinstance(value, datetime.time):
                 result = value
-            elif isinstance(value, datetime.datetime):
-                result = value.time()
+            # else we try to parse the string ...
             else:
-                log_to_postgres('Value ' + unicode(value) + ' can not be compared with a field of type ' +  column.type, DEBUG)
+                try:
+                    parsed = parser.parse(unicode(value))
+                    if parsed.tzinfo is not None:
+                        parsed = parsed.replace(tzinfo=None)
+                    result = datetime.time(parsed.hour, parsed.minute, parsed.second, parsed.microsecond)
+                except Exception as e:
+                    log_to_postgres('Value ' + unicode(value) + ' of type ' + unicode(type(value)) + ' can not be compared with a localtime field => ' +  unicode(e), ERROR)
+
+        # we want a time with timezone
+        elif column.type_name == 'time with time zone':
+            # if we have a datetime, we only take the time
+            if isinstance(value, datetime.datetime):
+                result = value.replace(tzinfo=None).time()
+            # Add the timezone if needed
+            elif isinstance(value, datetime.time):
+                result = value.time()
+            # else we try to parse the string ...
+            else:
+                try:
+                    parsed = parser.parse(unicode(value))
+                    tz = parsed.tzinfo
+                    if parsed.tzinfo is None :
+                        tz = pytz.utc
+                    result = datetime.time(parsed.hour, parsed.minute, parsed.second, parsed.microsecond, tz)
+                except ValueError as e:
+                    log_to_postgres('Value ' + unicode(value) + ' of type ' + unicode(type(value)) + ' can not be compared with a time field => ' +  unicode(e), ERROR)
+
+        elif column.type_name == 'timestamp without time zone':
+            # if we have a datetime, we remove the tz
+            if isinstance(value, datetime.datetime):
+                result = value.replace(tzinfo=None)
+            # if we have date, we convert it to a datetime
+            elif isinstance(value, datetime.date):
+                result = datetime.datetime(value.year, value.month, value.day)
+            # Otherwise we try to parse the value as a string
+            else:
+                try:
+                    parsed = parser.parse(unicode(value))
+                    if parsed.tzinfo is not None:
+                        parsed = parsed.replace(tzinfo=None)
+                    result = parsed
+                except ValueError as e:
+                    log_to_postgres('Value ' + unicode(value) + ' of type ' + unicode(type(value)) + ' can not be compared with a localdatetime field => ' +  unicode(e), ERROR)
 
         elif column.type_name == 'timestamp with time zone':
-            # Add the timezone if needed
+            # if we have a datetime
             if isinstance(value, datetime.datetime):
                 result = value
+                # check if a TZ is present
+                if value.tzinfo is None:
+                    result = value.replace(tzinfo=pytz.utc)
+            # if we have date, we convert it to a datetime
             elif isinstance(value, datetime.date):
-                result = value #TODO: change the date to a datetime with default time + default T
+                result = datetime.datetime(value.year, value.month, value.day, 0, 0, 0, 0, pytz.utc)
+            # Otherwise we try to parse the value as a string
             else:
-                log_to_postgres('Value ' + unicode(value) + ' can not be compared with a field of type ' +  column.type, DEBUG)
+                try:
+                    parsed = parser.parse(unicode(value))
+                    if parsed.tzinfo is None:
+                        parsed = parsed.replace(tzinfo=pytz.utc)
+                    result = parsed
+                except ValueError as e:
+                    log_to_postgres('Value ' + unicode(value) + ' of type ' + unicode(type(value)) + ' can not be compared with a datetime field => ' +  unicode(e), ERROR)
 
-        elif column.type_name == 'timestamp':
-            # Add the timezone if needed
-            if isinstance(value, datetime.datetime):
-                result = value
-            elif isinstance(value, datetime.date):
-                result = value #TODO: change the date to a datetime with default time + default T
-            else:
-                log_to_postgres('Value ' + unicode(value) + ' can not be compared with a field of type ' +  column.type, DEBUG)
-
+        log_to_postgres('Value is ' + unicode(result), DEBUG)
         return result
 
