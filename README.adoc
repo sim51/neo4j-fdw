@@ -1,5 +1,7 @@
 = Neo4j Postgres integration
 
+image:https://travis-ci.org/sim51/neo4j-fdw.svg?branch=master["Build Status", link="https://travis-ci.org/sim51/neo4j-fdw"]
+
 == Purpose
 
 Neo4jPg is a foreign data wrapper for Postgresql. It can be used to access data stored into Neo4j from Postgresql.
