@@ -107,6 +107,8 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         log_to_postgres('Init cypher query is : ' + unicode(query), DEBUG)
         log_to_postgres('Quals are : ' + unicode(quals), DEBUG)
 
+        needUpdateProjection = True
+
         if(quals is not None and len(quals) > 0):
 
             # Step 1 : we check if there is some `where` annotation in the query
@@ -145,11 +147,14 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
                 match = pattern.match(query)
                 query = match.group(1) + "WITH" + match.group(2) + " WHERE " + ' AND '.join(where_clauses) + " RETURN " + ', '.join(columns)
                 log_to_postgres('Current cypher query after generic where is : ' + unicode(query), DEBUG)
+                needUpdateProjection=False
 
         # Step 3 : We construct the projection for the return
-        return_pattern = re.compile('(.*)RETURN(.*)', re.IGNORECASE|re.MULTILINE|re.DOTALL)
-        return_match = return_pattern.match(query)
-        query = return_match.group(1) + "WITH" + return_match.group(2) + " RETURN " + ', '.join(columns)
+        # we only modify the projection if it's needed (ie. we don't return all the tables columns)
+        if(needUpdateProjection and len(columns) < len(self.columns)):
+            return_pattern = re.compile('(.*)RETURN(.*)', re.IGNORECASE|re.MULTILINE|re.DOTALL)
+            return_match = return_pattern.match(query)
+            query = return_match.group(1) + "WITH" + return_match.group(2) + " RETURN " + ', '.join(columns)
 
         # Step 4 : We add the order clause at the end of the query
         if sortkeys is not None:
