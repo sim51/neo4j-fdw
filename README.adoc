@@ -226,8 +226,8 @@ Example :
 ----
 mydatabase=#
 SELECT cypher  FROM cypher('MATCH (n:Location) RETURN n LIMIT 10');
+
                                                             cypher
-------------------------------------------------------------------------------------------------------------------------------
  {"n":{"labels": ["Location"],"properties": {"y": 1906520.0, "x": 1158953.0, "name": "025XX W AUGUSTA BLVD"}}}
  {"n":{"labels": ["Location"],"properties": {"y": 1842294.0, "x": 1175702.0, "name": "094XX S HARVARD AVE"}}}
  {"n":{"labels": ["Location"],"properties": {"y": 1931163.0, "x": 1152905.0, "name": "047XX N KIMBALL AVE"}}}
@@ -248,8 +248,8 @@ Example :
 ----
 mydatabase=#
 SELECT cypher  FROM cypher('MATCH (n)-[r]->(m) RETURN r AS relation LIMIT 10');
+
                           cypher
------------------------------------------------------------
  {"relation":{"type": "IS_TYPE_OF","properties": {}}}
  {"relation":{"type": "IS_TYPE_OF","properties": {}}}
  {"relation":{"type": "IS_LOCALIZED_AT","properties": {}}}
@@ -269,7 +269,6 @@ Of course, for primitive type are also supported, and you can mix all of this : 
 mydatabase=#
 SELECT cypher  FROM cypher('MATCH (y:Year)-[r]->(m) RETURN y.value AS year, r, m LIMIT 10');
                                                       cypher
--------------------------------------------------------------------------------------------------------------------
  {"year":2015,"r":{"type": "IN_YEAR","properties": {}},"m":{"labels": ["Crime"],"properties": {"id": "10016718"}}}
  {"year":2015,"r":{"type": "IN_YEAR","properties": {}},"m":{"labels": ["Crime"],"properties": {"id": "10017521"}}}
  {"year":2015,"r":{"type": "IN_YEAR","properties": {}},"m":{"labels": ["Crime"],"properties": {"id": "10018383"}}}
