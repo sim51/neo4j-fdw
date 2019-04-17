@@ -10,6 +10,17 @@
 #  - github-release-cli (https://www.npmjs.com/package/github-release-cli)
 ###############################################################################
 
+git update-index -q --refresh
+CHANGED=$(git diff-index --name-only HEAD --)
+if [ ! -z "$CHANGED" ]; then
+  echo "You have some local changes"
+  echo "$(git status)"
+  exit 1
+fi
+
+echo "Pushing"
+git push
+
 echo "~ Generate the project archive"
 git archive --format zip --prefix=neo4j-fdw_v$1/ --output ./neo4j-fdw_v$1.zip HEAD
 unzip ./neo4j-fdw_v$1.zip
@@ -52,12 +63,7 @@ fi
 
 # Create the github release notes
 # based on https://www.npmjs.com/package/github-release-cli
-github-release upload \
-  --owner=sim51 \
-  --repo=neo4j-fdw \
-  --tag="v$1" \
-  --name="v$1" \
-  --body="$(cat $tmpfile)" \
-  ./neo4j-fdw_v$1.zip
+echo "Running github release github-release"
+github-release upload  --owner=sim51  --repo=neo4j-fdw  --tag="v$1"  --name="v$1"  --body="$(cat $tmpfile)"  neo4j-fdw_v$1.zip
 
 echo "Don't forget to upload the zip file at https://manager.pgxn.org/upload"
