@@ -4,4 +4,4 @@ python:
 services:
   - docker
 script:
-  - exec ./script/test.sh
+  - exec ./scripts/test.sh
