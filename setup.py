@@ -3,7 +3,7 @@ import neo4jPg
 
 setup(
       name             = neo4jPg.__package__,
-      version          = "@@VERSION@@",
+      version          = "__VERSION__",
       author           = neo4jPg.__author__,
       author_email     = neo4jPg.__email__,
       url              = neo4jPg.__url__,

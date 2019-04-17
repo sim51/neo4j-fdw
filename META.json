@@ -2,7 +2,7 @@
    "name": "neo4j-fdw",
    "abstract": "PostgreSQL foreign data wrapper for Neo4j Graph Database",
    "description": "Neo4j multicorn foreign data wrapper extension for PostgreSQL",
-   "version": "@@VERSION@@",
+   "version": "__VERSION__",
    "maintainer": [
      "Benoit Simard <github@bsimard.com>"
    ],
@@ -20,7 +20,7 @@
        "abstract": "PostgreSQL foreign data wrapper for Neo4j Graph Database",
        "file": "sql/neo4j-fdw.sql",
        "docfile": "./README.adoc",
-       "version": "@@VERSION@@"
+       "version": "__VERSION__"
      }
    },
    "resources": {

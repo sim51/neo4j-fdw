@@ -20,7 +20,7 @@ install: python_code
 
 python_code: setup.py
 	cp ./setup.py ./setup--$(EXTVERSION).py
-	sed -i -e "s/@@VERSION@@/$(EXTVERSION)-dev/g" ./setup--$(EXTVERSION).py
+	sed -i -e "s/__VERSION__/$(EXTVERSION)/g" ./setup--$(EXTVERSION).py
 	$(PYTHON) ./setup--$(EXTVERSION).py install
 	rm ./setup--$(EXTVERSION).py
 
