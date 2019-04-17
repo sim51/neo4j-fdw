@@ -7,7 +7,20 @@ Moreover, you can directly write a cypher query in your select.
 
 == How to install
 
-=== Requirements
+=== With PGXN
+
+Just type those command :
+
+----
+$> sudo pgxn install multicorn
+$> sudo pgxn install neo4j-fdw
+----
+
+Easy, no ?
+
+=== From the sources
+
+==== Requirements
 
 There is some Postgresql & Python requirements to use this project  :
 
@@ -19,12 +32,11 @@ There is some Postgresql & Python requirements to use this project  :
 
 On a debian system, you can directly type this command :
 
-[source,bash]
 ----
 $> sudo apt-get install build-essential postgresql-server-dev-10 python-dev python-setuptools python-dev python-pip postgresql-plpython-10
 ----
 
-=== Installing multicorn
+==== Installing multicorn
 
 This project is based on Multicorn, so you have to install it.
 
@@ -32,7 +44,6 @@ This project is based on Multicorn, so you have to install it.
 NOTE: If you are using PG 9.1, you should use version 0.9.X version (`git checkout v0.9.3`)
 NOTE: If you are using PG 9.2, you should use version 1.0.X version (`git checkout v01.0.1`)
 
-[source,bash]
 ----
 $> cd /tmp
 $> git clone git://github.com/Kozea/Multicorn.git
@@ -43,7 +54,6 @@ $> make && make install
 
 When it's done, you have to enable the extension in your PostgreSQL database.
 
-[source,bash]
 ----
 $> sudo su - postgres
 $> psql
@@ -52,20 +62,18 @@ CREATE EXTENSION
 mydatabase=# \q
 ----
 
-=== Neo4j FDW
+==== Neo4j FDW
 
 You can find The Neo4j foreign data wrapper here : https://github.com/sim51/neo4j-fwd
 
 Clone the repository
 
-[source,bash]
 ----
 $> git clone https://github.com/sim51/neo4j-fwd
 ----
 
 Install the project
 
-[source,bash]
 ----
 $> cd neo4j-fdw
 $> python setup.py install
@@ -73,13 +81,12 @@ $> python setup.py install
 
 At this point, everything is done to use Neo4j in Postgresql !
 
-== Foreign Data Wrapper
+== How to use the Foreign Data Wrapper
 
 === Create a neo4j server
 
 First step, you have to create a foreign server in Postgres :
 
-[source, sql]
 ----
 mydatabase=#
 CREATE SERVER multicorn_neo4j FOREIGN DATA WRAPPER multicorn
@@ -104,7 +111,6 @@ Now you can create a foreign table that match a cypher query.
 
 IMPORTANT: Your cypher query must return a collection, annd you have to give an alias on each return variable.
 
-[source, sql]
 ----
 mydatabase=#
 CREATE FOREIGN TABLE neo4j_movie (
@@ -150,14 +156,12 @@ With those information, the plugin know how to put the where clause in your cyph
 
 So this SQL query  :
 
-[source,sql]
 ----
 SELECT * FROM actedIn WHERE born > 1980 AND movie = "The Matrix"
 ----
 
 Will generate this cypher query :
 
-[source,cypher]
 ----
 MATCH (p:Person) WHERE p.born > 1980
 WITH p
@@ -173,11 +177,10 @@ Example : `SELECT * FROM cypher('MATCH (n)-[r]->(m) RETURN n,r,m LIMIT 10')`
 
 The `cypher` function returns a postgres JSON type.
 
-=== Create the function into your database
+=== Create the functions into your database
 
 You have to declare those functions into your database, before to use it.
 
-[source, sql]
 ----
 mydatabase=#
 CREATE EXTENSION plpythonu;
@@ -219,7 +222,7 @@ The JSON produced follow your cypher return statement : the key of the first jso
 If the return object is a Node, it's serialize as a JSON object like this : { id:X, labels : [], properties: { object } }
 
 Example :
-[source, sql]
+
 ----
 mydatabase=#
 SELECT cypher  FROM cypher('MATCH (n:Location) RETURN n LIMIT 10');
@@ -241,7 +244,7 @@ SELECT cypher  FROM cypher('MATCH (n:Location) RETURN n LIMIT 10');
 If the return object is a relation, it's serialize as a JSON object like this :` { type : "MY_TYPE", properties: { object } }`
 
 Example :
-[source, sql]
+
 ----
 mydatabase=#
 SELECT cypher  FROM cypher('MATCH (n)-[r]->(m) RETURN r AS relation LIMIT 10');
@@ -262,7 +265,6 @@ SELECT cypher  FROM cypher('MATCH (n)-[r]->(m) RETURN r AS relation LIMIT 10');
 
 Of course, for primitive type are also supported, and you can mix all of this : SELECT cypher  FROM cypher('MATCH (y:Year)-[r]->(m) RETURN y.value AS year, r, m LIMIT 10');
 
-[source, sql]
 ----
 mydatabase=#
 SELECT cypher  FROM cypher('MATCH (y:Year)-[r]->(m) RETURN y.value AS year, r, m LIMIT 10');
@@ -285,7 +287,6 @@ SELECT cypher  FROM cypher('MATCH (y:Year)-[r]->(m) RETURN y.value AS year, r, m
 
 PG 9.4 have a function name `json_to_record`, that convert our json into a collection of typed tuple !
 
-[source, sql]
 ----
 mydatabase=#
 SELECT year, id  FROM cypher('MATCH (y:Year)<-[r]-(m) RETURN y.value AS year, m.id AS id LIMIT 10') , json_to_record(cypher) as x(year int, id varchar)
