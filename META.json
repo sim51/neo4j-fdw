@@ -6,7 +6,7 @@
    "maintainer": [
      "Benoit Simard <github@bsimard.com>"
    ],
-   "license": "GPL3",
+   "license": "gpl_3",
    "prereqs": {
       "runtime": {
          "requires": {
