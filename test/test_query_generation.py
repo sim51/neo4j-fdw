@@ -45,7 +45,7 @@ class QueryGenerationTest(unittest.TestCase):
             'url':'bolt://localhost',
             'user':'neo4j',
             'password':'admin',
-            'cypher':'MATCH (p:Person)-[r:ACTED_IN]->(m:Movie) /*WHERE{actor:"p.name", movie:"m.title"}*/ WITH p.name AS name, m.title AS title /*WHERE{roles:"r.roles"}*/ RETURN name AS actor, title AS movie, r.roles AS roles'
+            'cypher':'MATCH (p:Person)-[r:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name", "movie":"m.title"}*/ WITH p.name AS name, m.title AS title, r /*WHERE{"roles":"r.roles"}*/ RETURN name AS actor, title AS movie, r.roles AS roles'
         }
         columns = ['actor', 'movie'];
         nfdw = neo4jfdw.Neo4jForeignDataWrapper(options, columns);
@@ -53,7 +53,7 @@ class QueryGenerationTest(unittest.TestCase):
         quals = [];
         query = nfdw.make_cypher(quals, columns, None)
         self.assertEqual(
-            'MATCH (p:Person)-[r:ACTED_IN]->(m:Movie) /*WHERE{actor:"p.name", movie:"m.title"}*/ WITH p.name AS name, m.title AS title /*WHERE{roles:"r.roles"}*/ RETURN name AS actor, title AS movie, r.roles AS roles',
+            'MATCH (p:Person)-[r:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name", "movie":"m.title"}*/ WITH p.name AS name, m.title AS title, r /*WHERE{"roles":"r.roles"}*/ RETURN name AS actor, title AS movie, r.roles AS roles',
             query
         )
 
@@ -80,7 +80,7 @@ class QueryGenerationTest(unittest.TestCase):
             'url':'bolt://localhost',
             'user':'neo4j',
             'password':'admin',
-            'cypher':'MATCH (p:Person)-[:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name"}*/ WITH p.name AS name, m.title AS title, r RETURN name AS actor, title AS movie'
+            'cypher':'MATCH (p:Person)-[:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name"}*/ WITH p.name AS name, m.title AS title RETURN name AS actor, title AS movie'
         }
         columns = ['actor', 'movie'];
         nfdw = neo4jfdw.Neo4jForeignDataWrapper(options, columns);
@@ -89,7 +89,7 @@ class QueryGenerationTest(unittest.TestCase):
         query = nfdw.make_cypher(quals, columns, None)
 
         self.assertEqual(
-            'MATCH (p:Person)-[:ACTED_IN]->(m:Movie)  WHERE p.name=$`actor` WITH p.name AS name, m.title AS title, r WITH name AS actor, title AS movie WHERE movie=$`movie` RETURN actor, movie',
+            'MATCH (p:Person)-[:ACTED_IN]->(m:Movie)  WHERE p.name=$`actor` WITH p.name AS name, m.title AS title WITH name AS actor, title AS movie WHERE movie=$`movie` RETURN actor, movie',
             query
         )
 
