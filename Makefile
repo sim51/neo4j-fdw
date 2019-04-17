@@ -1,9 +1,13 @@
-MODULE_NAME = neo4j-fdw
-PYTHON ?= python
-PKGDIR = $$($(PYTHON) -c "import site; print(site.getsitepackages()[0])")
-NAME = $$($(PYTHON) setup.py --name)
-VERSION = $$($(PYTHON) setup.py --version)
-PYVERSION = $$($(PYTHON) -c "import sys; print(sys.version[:3])")
+MODULE_NAME    = neo4j-fdw
+NAME           = $$($(PYTHON) setup.py --name)
+EXTVERSION        = $(shell grep default_version ./$(MODULE_NAME).control | sed -e "s/default_version[[:space:]]*=[[:space:]]*'\([^']*\)'/\1/")
+DATA           =  $(filter-out $(wildcard sql/*--*.sql),$(wildcard sql/*.sql))
+DOCS           = README.adoc
+MODULEDIR      = neo4j-fdw
+
+PYTHON        ?= python
+PKGDIR        = $$($(PYTHON) -c "import site; print(site.getsitepackages()[0])")
+PYVERSION     = $$($(PYTHON) -c "import sys; print(sys.version[:3])")
 
 .PHONY: all install test uninstall clean
 
@@ -12,11 +16,19 @@ all: install
 test:
 	@./scripts/test.sh
 
-install:
-	@$(PYTHON) setup.py install
+install: python_code
 
-uninstall:
-	@rm -f $(PKGDIR)/$(NAME)-$(VERSION)-py$(PYVERSION).egg
+python_code: setup.py
+	cp ./setup.py ./setup--$(EXTVERSION).py
+	sed -i -e "s/@@VERSION@@/$(EXTVERSION)-dev/g" ./setup--$(EXTVERSION).py
+	$(PYTHON) ./setup--$(EXTVERSION).py install
+	rm ./setup--$(EXTVERSION).py
 
 clean:
 	@$(PYTHON) setup.py clean
+	@rm -f $(PKGDIR)/$(NAME)-$(EXTVERSION)-py$(PYVERSION).egg
+
+
+PG_CONFIG = pg_config
+PGXS := $(shell $(PG_CONFIG) --pgxs)
+include $(PGXS)

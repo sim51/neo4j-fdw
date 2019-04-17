@@ -1,0 +1,46 @@
+{
+   "name": "neo4j-fdw",
+   "abstract": "PostgreSQL foreign data wrapper for Neo4j Graph Database",
+   "description": "Neo4j multicorn foreign data wrapper extension for PostgreSQL",
+   "version": "@@VERSION@@",
+   "maintainer": [
+     "Benoit Simard <github@bsimard.com>"
+   ],
+   "license": "GPL3",
+   "prereqs": {
+      "runtime": {
+         "requires": {
+            "Python": "2.6.0",
+            "PostgreSQL": "9.1.0"
+         }
+      }
+   },
+   "provides": {
+     "neo4jPg": {
+       "abstract": "PostgreSQL foreign data wrapper for Neo4j Graph Database",
+       "file": "sql/neo4j-fdw.sql",
+       "docfile": "./README.adoc",
+       "version": "@@VERSION@@"
+     }
+   },
+   "resources": {
+      "bugtracker": {
+         "web": "http://github.com/sim51/neo4j-fdw/issues/"
+      },
+      "repository": {
+        "url":  "git://github.com/sim51/neo4j-fdw.git",
+        "web":  "http://github.com/sim51/neo4j-fdw/",
+        "type": "git"
+      }
+   },
+   "generated_by": "Benoit Simard",
+   "meta-spec": {
+      "version": "1.0.0",
+      "url": "http://pgxn.org/meta/spec.txt"
+   },
+   "tags": [
+      "neo4j",
+      "multicorn",
+      "foreign data wrapper"
+   ]
+}
