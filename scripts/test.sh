@@ -12,7 +12,7 @@ echo "~ Run docker compose"
 echo "~~~"
 docker-compose rm -f
 docker-compose pull
-docker-compose up --build --detach
+docker-compose up --build -d
 
 echo "~~~"
 echo "~ Install/Update extension in Postgres"
