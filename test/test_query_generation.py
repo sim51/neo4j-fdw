@@ -8,7 +8,7 @@ class QueryGenerationTest(unittest.TestCase):
 
     def test_all_movie(self):
         options = {
-            'url':'bolt://localhost',
+            'url':'bolt://fdw-neo4j',
             'user':'neo4j',
             'password':'admin',
             'cypher':'MATCH (n:Movie) RETURN n.title as movie'
@@ -25,7 +25,7 @@ class QueryGenerationTest(unittest.TestCase):
 
     def test_movie_by_title(self):
         options = {
-            'url':'bolt://localhost',
+            'url':'bolt://fdw-neo4j',
             'user':'neo4j',
             'password':'admin',
             'cypher':'MATCH (n:Movie) RETURN n.title as movie'
@@ -42,7 +42,7 @@ class QueryGenerationTest(unittest.TestCase):
 
     def test_query_with_where_clauses_defined_by_user_all(self):
         options = {
-            'url':'bolt://localhost',
+            'url':'bolt://fdw-neo4j',
             'user':'neo4j',
             'password':'admin',
             'cypher':'MATCH (p:Person)-[r:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name", "movie":"m.title"}*/ WITH p.name AS name, m.title AS title, r /*WHERE{"roles":"r.roles"}*/ RETURN name AS actor, title AS movie, r.roles AS roles'
@@ -59,7 +59,7 @@ class QueryGenerationTest(unittest.TestCase):
 
     def test_query_with_where_clauses_defined_by_user(self):
         options = {
-            'url':'bolt://localhost',
+            'url':'bolt://fdw-neo4j',
             'user':'neo4j',
             'password':'admin',
             'cypher':'MATCH (p:Person)-[:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name", "movie":"m.title"}*/ WITH p.name AS name, m.title AS title RETURN name AS actor, title AS movie'
@@ -77,7 +77,7 @@ class QueryGenerationTest(unittest.TestCase):
 
     def test_query_with_where_clauses_defined_by_user_and_generic(self):
         options = {
-            'url':'bolt://localhost',
+            'url':'bolt://fdw-neo4j',
             'user':'neo4j',
             'password':'admin',
             'cypher':'MATCH (p:Person)-[:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name"}*/ WITH p.name AS name, m.title AS title RETURN name AS actor, title AS movie'
@@ -95,7 +95,7 @@ class QueryGenerationTest(unittest.TestCase):
 
     def test_query_with_multiple_where_clauses_defined_by_user(self):
         options = {
-            'url':'bolt://localhost',
+            'url':'bolt://fdw-neo4j',
             'user':'neo4j',
             'password':'admin',
             'cypher':'MATCH (p:Person) /*WHERE{"actor":"p.name"}*/ WITH p MATCH (p)-[:ACTED_IN]->(m:Movie) /*WHERE{"movie":"m.title"}*/ RETURN p.name AS actor, m.title AS movie'

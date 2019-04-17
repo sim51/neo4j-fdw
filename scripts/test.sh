@@ -41,7 +41,7 @@ echo "~ Running python tests"
 echo "~~~"
 echo
 
-py.test
+docker exec -it fdw-pg /source/scripts/python_test.sh
 
 RESULT=$?
 if [ $RESULT -gt 0 ]; then
