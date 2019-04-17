@@ -19,8 +19,6 @@ services:
     build:
       context: .
       dockerfile: ./scripts/docker/postgres/Dockerfile
-    ports:
-      - 5432:5432
     volumes:
           - .:/source
     container_name: "fdw-pg"

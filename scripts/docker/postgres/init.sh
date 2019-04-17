@@ -13,5 +13,4 @@ make && make install
 # Install neo4j fdw
 echo "~~~~~~~~~~~~~ Installing Neo4j FDW"
 cd /neo4j-fdw/source/
-ls -l
 make install
