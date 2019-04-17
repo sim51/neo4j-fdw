@@ -22,4 +22,4 @@ RUN apt-get update \
 RUN ["chmod", "+x", "/neo4j-fdw/source/scripts/docker/postgres/init.sh"]
 RUN /neo4j-fdw/source/scripts/docker/postgres/init.sh
 
-ADD ./scripts/docker/postgres/initdb.sql /docker-entrypoint-initdb.d
+
