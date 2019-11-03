@@ -11,7 +11,7 @@ services:
       - .:/source
     environment:
       - "NEO4J_ACCEPT_LICENSE_AGREEMENT=yes"
-      - "NEO4J_AUTH=neo4j/admin"
+      - "NEO4J_AUTH=none"
     container_name: "fdw-neo4j"
 
   # Custom postgres from dokerfile

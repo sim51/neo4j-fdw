@@ -4,4 +4,4 @@
 echo "~~~"
 echo "~ Init database"
 echo "~~~"
-su-exec neo4j bin/cypher-shell -u neo4j -p admin < /source/scripts/docker/neo4j/initdb.gql
+bin/neo4j start && sleep 10 && bin/cypher-shell -u neo4j -p neo4j < /source/scripts/docker/neo4j/initdb.gql
