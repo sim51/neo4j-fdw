@@ -41,8 +41,8 @@ def cypher(plpy, query, params, url, login, password):
                     jsonResult += json.dumps(object)
             jsonResult += "}"
             yield jsonResult
-    except CypherError:
-        raise RuntimeError("Bad cypher query : " + statement)
+    except CypherError as ce:
+        raise RuntimeError("Bad cypher query: %s - Error message: %s" % (query,str(ce)))
     finally:
         session.close()
 
