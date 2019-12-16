@@ -204,10 +204,11 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
         # quals is a list with ALL
         elif qual.list_any_or_all == ALL:
-            conditions = [
-                self.generate_condition(Qual(qual.field_name, qual.operator[0], value), '`' + unicode(query_param_name) + '`' + '[' + unicode(array_index) + ']')
+            values = [
+                '( %s )' % self.generate_condition(Qual(qual.field_name, qual.operator[0], value), '`' + unicode(query_param_name) + '`' + '[' + unicode(array_index) + ']')
                 for array_index, value in enumerate(qual.value)
             ]
+            condition = ' ( ' +  ' AND '.join(values) + ' ) '
 
         # quals is just a string
         else:
