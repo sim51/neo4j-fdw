@@ -1,7 +1,9 @@
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG
-from neo4j import GraphDatabase, basic_auth, CypherError
+from neo4j import GraphDatabase, basic_auth, CypherError, __version__ as neo4jversion
 import json
 import ast
+
+MAJOR,MINOR,PATCH = neo4jversion.split('.')
 
 """
 Neo4j Postgres function
@@ -25,16 +27,22 @@ def cypher(plpy, query, params, url, login, password):
                 object = record[key]
                 if object.__class__.__name__ == "Node":
                     jsonResult += node2json(object)
+
+                # In 1.6 series of neo4j python driver a change to way relationship types are
+                # constructed which means ABCMeta is __class__ and the mro needs to be checked
+                elif (MAJOR >= 1 and MINOR > 16) and any(c.__name__ == 'Relationship' for c in object.__class__.__mro__):
+                    jsonResult += relation2json(object)
                 elif object.__class__.__name__ == "Relationship":
                     jsonResult += relation2json(object)
+
                 elif object.__class__.__name__ == "Path":
                     jsonResult += path2json(object)
                 else:
                     jsonResult += json.dumps(object)
             jsonResult += "}"
             yield jsonResult
-    except CypherError:
-        raise RuntimeError("Bad cypher query : " + statement)
+    except CypherError as ce:
+        raise RuntimeError("Bad cypher query: %s - Error message: %s" % (query,str(ce)))
     finally:
         session.close()
 
@@ -88,7 +96,15 @@ def relation2json(rel):
     """
     jsonResult = "{"
     jsonResult += '"id": ' + json.dumps(rel._id) + ','
-    jsonResult += '"type": ' + json.dumps(rel._type) + ','
+
+    if (MAJOR >= 1 and MINOR > 16):
+        # In 1.6 series of neo4j python driver relationships have "type" attribute instead of "_type"
+        jsonResult += '"type": ' + json.dumps(rel.type) + ','
+        # In 1.6 series of neo4j python driver relationships contain their nodes
+        jsonResult += '"nodes": [' + node2json(rel.nodes[0]) + ',' + node2json(rel.nodes[1]) + '],'
+    else:
+        jsonResult += '"type": ' + json.dumps(rel._type) + ','
+
     jsonResult += '"properties": ' + json.dumps(rel._properties, default=set_default)
     jsonResult += "}"
 
@@ -99,12 +115,17 @@ def path2json(path):
         Convert a path to json
     """
     jsonResult = "["
-    if segment.start() is not None:
-        jsonResult += node2json(segment.start())
 
-    for segment in path:
-        jsonResult += "," + relation2json( segment.relationship() )
-        jsonResult += "," + node2json( segment.end() )
+    if (MAJOR >= 1 and MINOR > 16):
+        jsonResult += ",".join([relation2json(segment) for segment in path])
+    else:
+        # This seems to be broken?
+        if segment.start() is not None:
+            jsonResult += node2json(segment.start())
+
+        for segment in path:
+            jsonResult += "," + relation2json( segment.relationship() )
+            jsonResult += "," + node2json( segment.end() )
 
     jsonResult += "]"
 

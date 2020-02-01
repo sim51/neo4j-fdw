@@ -1,4 +1,5 @@
 \a
+SET IntervalStyle to postgres_verbose;
 /* Date comparisons */
 SELECT * FROM temporal WHERE temporal.my_date > (DATE '1983-03-26');
 my_date|my_localtime|my_time|my_datetime|my_localdatetime|my_duration
