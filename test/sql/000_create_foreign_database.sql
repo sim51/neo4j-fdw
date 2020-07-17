@@ -66,10 +66,10 @@ CREATE FOREIGN TABLE temporal (
     cypher 'MATCH (n:TemporalNode) RETURN n.date AS my_date, n.time AS my_time, n.localtime AS my_localtime, n.datetime AS my_datetime, n.localdatetime AS my_localdatetime, n.duration AS my_duration'
   );
 
-CREATE EXTENSION plpythonu;
+CREATE EXTENSION plpython3u;
 
 CREATE OR REPLACE FUNCTION cypher(query text) RETURNS SETOF json
-LANGUAGE plpythonu
+LANGUAGE plpython3u
 AS $$
 from neo4jPg import neo4jPGFunction
 for result in neo4jPGFunction.cypher_default_server(plpy, query, '{}'):
@@ -77,7 +77,7 @@ for result in neo4jPGFunction.cypher_default_server(plpy, query, '{}'):
 $$;
 
 CREATE OR REPLACE FUNCTION cypher(query text, params text) RETURNS SETOF json
-LANGUAGE plpythonu
+LANGUAGE plpython3u
 AS $$
 from neo4jPg import neo4jPGFunction
 for result in neo4jPGFunction.cypher_default_server(plpy, query, params):
@@ -85,7 +85,7 @@ for result in neo4jPGFunction.cypher_default_server(plpy, query, params):
 $$;
 
 CREATE OR REPLACE FUNCTION cypher(query text, params text, server text) RETURNS SETOF json
-LANGUAGE plpythonu
+LANGUAGE plpython3u
 AS $$
 from neo4jPg import neo4jPGFunction
 for result in neo4jPGFunction.cypher_with_server(plpy, query, params, server):
