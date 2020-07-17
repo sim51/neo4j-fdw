@@ -1,12 +1,8 @@
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG
-from neo4j import GraphDatabase, basic_auth, __version__ as neo4jversion
+from neo4j import GraphDatabase, basic_auth
 from neo4j.exceptions import CypherSyntaxError, CypherTypeError
 import json
 import ast
-
-MJR,MNR,PATCH = neo4jversion.split('.')
-MAJOR = int(MJR)
-MINOR = int(MNR)
 
 """
 Neo4j Postgres function
@@ -33,7 +29,7 @@ def cypher(plpy, query, params, url, login, password):
 
                 # In 1.6 series of neo4j python driver a change to way relationship types are
                 # constructed which means ABCMeta is __class__ and the mro needs to be checked
-                elif ((MAJOR >= 1 and MINOR > 16) or (MAJOR >= 4)) and any(c.__name__ == 'Relationship' for c in object.__class__.__mro__):
+                elif any(c.__name__ == 'Relationship' for c in object.__class__.__mro__):
                     jsonResult += relation2json(object)
                 elif object.__class__.__name__ == "Relationship":
                     jsonResult += relation2json(object)
@@ -102,13 +98,8 @@ def relation2json(rel):
     jsonResult = "{"
     jsonResult += '"id": ' + json.dumps(rel._id) + ','
 
-    if (MAJOR >= 1 and MINOR > 16) or (MAJOR >= 4):
-        # In 1.6 series of neo4j python driver relationships have "type" attribute instead of "_type"
-        jsonResult += '"type": ' + json.dumps(rel.type) + ','
-        # In 1.6 series of neo4j python driver relationships contain their nodes
-        jsonResult += '"nodes": [' + node2json(rel.nodes[0]) + ',' + node2json(rel.nodes[1]) + '],'
-    else:
-        jsonResult += '"type": ' + json.dumps(rel._type) + ','
+    jsonResult += '"type": ' + json.dumps(rel.type) + ','
+    jsonResult += '"nodes": [' + node2json(rel.nodes[0]) + ',' + node2json(rel.nodes[1]) + '],'
 
     jsonResult += '"properties": ' + json.dumps(rel._properties, default=set_default)
     jsonResult += "}"
@@ -121,16 +112,7 @@ def path2json(path):
     """
     jsonResult = "["
 
-    if (MAJOR >= 1 and MINOR > 16) or (MAJOR >= 4):
-        jsonResult += ",".join([relation2json(segment) for segment in path])
-    else:
-        # This seems to be broken?
-        if segment.start() is not None:
-            jsonResult += node2json(segment.start())
-
-        for segment in path:
-            jsonResult += "," + relation2json( segment.relationship() )
-            jsonResult += "," + node2json( segment.end() )
+    jsonResult += ",".join([relation2json(segment) for segment in path])
 
     jsonResult += "]"
 
