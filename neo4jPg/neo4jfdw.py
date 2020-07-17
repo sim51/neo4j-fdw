@@ -6,7 +6,8 @@ import datetime
 from dateutil import parser
 from multicorn import ForeignDataWrapper, Qual, ANY, ALL
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG, INFO
-from neo4j import GraphDatabase, basic_auth, CypherError
+from neo4j import GraphDatabase, basic_auth
+from neo4j.exceptions import CypherSyntaxError, CypherTypeError
 
 class Neo4jForeignDataWrapper(ForeignDataWrapper):
     """
@@ -41,13 +42,13 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         self.columns = columns
 
         # Create a neo4j driver instance
-        self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password))
+        self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password), encrypted=False)
 
         self.columns_stat = self.compute_columns_stat()
         self.table_stat = int(options.get("estimated_rows", -1))
         if(self.table_stat < 0):
             self.table_stat = self.compute_table_stat()
-        log_to_postgres('Table estimated rows : ' + unicode(self.table_stat), DEBUG)
+        log_to_postgres('Table estimated rows : ' + str(self.table_stat), DEBUG)
 
 
     def get_rel_size(self, quals, columns):
@@ -79,10 +80,10 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
         params = {}
         for qual in quals:
-            params[unicode(qual.field_name)] = self.convert_to_neo4j(self.columns[qual.field_name], qual.value)
+            params[str(qual.field_name)] = self.convert_to_neo4j(self.columns[qual.field_name], qual.value)
 
-        log_to_postgres('Neo4j query is : ' + unicode(statement), DEBUG)
-        log_to_postgres('With params : ' + unicode(params), DEBUG)
+        log_to_postgres('Neo4j query is : ' + str(statement), DEBUG)
+        log_to_postgres('With params : ' + str(params), DEBUG)
 
         # Execute & retrieve neo4j data
         session = self.driver.session()
@@ -92,10 +93,12 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
                 for column_name in columns:
                     # TODO: from neo4j type to pg types
                     line[column_name] = self.convert_to_pg(self.columns[column_name], record[column_name])
-                log_to_postgres("sending result item to PG : " + unicode(line),  DEBUG)
+                log_to_postgres("sending result item to PG : " + str(line),  DEBUG)
                 yield line
-        except CypherError:
+        except CypherSyntaxError:
             raise RuntimeError("Bad cypher query : " + statement)
+        except CypherTypeError:
+            raise RuntimeError("Bad cypher type in query : " + statement)
         finally:
             session.close()
 
@@ -104,8 +107,8 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         Override cypher query to add search criteria
         """
         query = self.cypher
-        log_to_postgres('Init cypher query is : ' + unicode(query), DEBUG)
-        log_to_postgres('Quals are : ' + unicode(quals), DEBUG)
+        log_to_postgres('Init cypher query is : ' + str(query), DEBUG)
+        log_to_postgres('Quals are : ' + str(quals), DEBUG)
 
         needUpdateProjection = True
 
@@ -115,29 +118,29 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
             where_match = re.findall('/\*WHERE([^}]*})\*/', self.cypher)
             if(where_match is not None):
               for group in where_match:
-                  log_to_postgres('Find a custom WHERE clause : ' + unicode(group), DEBUG)
+                  log_to_postgres('Find a custom WHERE clause : ' + str(group), DEBUG)
                   group_where_condition = []
 
                   # parse the JSON and check if field are in the where clause
                   # if so we replace it and remove the clause from the where
                   where_config = json.loads(group)
                   for field in where_config:
-                      fieldQuals = filter(lambda qual: qual.field_name == field, quals)
+                      fieldQuals = [qual for qual in quals if qual.field_name == field]
                       if (len(fieldQuals) > 0):
                           for qual in fieldQuals:
-                              log_to_postgres('Find a field for this custom WHERE clause : ' + unicode(qual), DEBUG)
+                              log_to_postgres('Find a field for this custom WHERE clause : ' + str(qual), DEBUG)
                               # Generate the condition
                               customQual = Qual(where_config[qual.field_name], qual.operator, qual.value)
                               group_where_condition.append(self.generate_condition(customQual, qual.field_name ))
                               # Remove the qual from the initial qual list
-                              quals = filter(lambda qual: not qual.field_name == field, quals)
+                              quals = [qual for qual in quals if not qual.field_name == field]
 
                   # replace the captured group by the condition
                   if (len(group_where_condition) > 0):
                       query = query.replace('/*WHERE' + group + '*/', ' WHERE ' + ' AND '.join(group_where_condition))
                   else:
                       query = query.replace('/*WHERE' + group + '*/', '')
-                  log_to_postgres('Current cypher query is : ' + unicode(query), DEBUG)
+                  log_to_postgres('Current cypher query is : ' + str(query), DEBUG)
 
             # Step 2 : if there is still some where clause, we replace the return by a with/where/return
             if(len(quals) > 0):
@@ -146,7 +149,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
                 pattern = re.compile('(.*)RETURN(.*)', re.IGNORECASE|re.MULTILINE|re.DOTALL)
                 match = pattern.match(query)
                 query = match.group(1) + "WITH" + match.group(2) + " WHERE " + ' AND '.join(where_clauses) + " RETURN " + ', '.join(columns)
-                log_to_postgres('Current cypher query after generic where is : ' + unicode(query), DEBUG)
+                log_to_postgres('Current cypher query after generic where is : ' + str(query), DEBUG)
                 needUpdateProjection=False
 
         # Step 3 : We construct the projection for the return
@@ -165,7 +168,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
                 else:
                     orders.append(sortkey.attname)
             query = query + ' ORDER BY ' + ', '.join(orders)
-            log_to_postgres('Current cypher query after sort is : ' + unicode(query), DEBUG)
+            log_to_postgres('Current cypher query after sort is : ' + str(query), DEBUG)
 
         return query
 
@@ -197,7 +200,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         # quals is a list with ANY
         if qual.list_any_or_all == ANY:
             values = [
-                '( %s )' % self.generate_condition(Qual(qual.field_name, qual.operator[0], value), '`' + unicode(query_param_name) + '`' + '[' + unicode(array_index) + ']')
+                '( %s )' % self.generate_condition(Qual(qual.field_name, qual.operator[0], value), '`' + str(query_param_name) + '`' + '[' + str(array_index) + ']')
                 for array_index, value in enumerate(qual.value)
             ]
             condition = ' ( ' +  ' OR '.join(values) + ' ) '
@@ -205,7 +208,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         # quals is a list with ALL
         elif qual.list_any_or_all == ALL:
             values = [
-                '( %s )' % self.generate_condition(Qual(qual.field_name, qual.operator[0], value), '`' + unicode(query_param_name) + '`' + '[' + unicode(array_index) + ']')
+                '( %s )' % self.generate_condition(Qual(qual.field_name, qual.operator[0], value), '`' + str(query_param_name) + '`' + '[' + str(array_index) + ']')
                 for array_index, value in enumerate(qual.value)
             ]
             condition = ' ( ' +  ' AND '.join(values) + ' ) '
@@ -232,11 +235,11 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
             else:
                 if query_param_name.startswith('`'):
-                    condition = qual.field_name +  qual.operator + "$" + unicode(query_param_name)
+                    condition = qual.field_name +  qual.operator + "$" + str(query_param_name)
                 else:
-                    condition = qual.field_name +  qual.operator + "$`" + unicode(query_param_name) + '`'
+                    condition = qual.field_name +  qual.operator + "$`" + str(query_param_name) + '`'
 
-        log_to_postgres('Condition is : ' + unicode(condition), DEBUG)
+        log_to_postgres('Condition is : ' + str(condition), DEBUG)
         return condition
 
     def compute_columns_stat(self):
@@ -248,20 +251,22 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
                 quals = [Qual(column_name, '=', 'WHATEVER')];
                 query = 'EXPLAIN ' + self.make_cypher(quals, self.columns, None)
                 rs = session.run(query, {})
-                explain_summary = rs.summary().plan[2]
+                explain_summary = rs.consume().plan['args']
                 stats = explain_summary['EstimatedRows']
 
-                log_to_postgres('Explain query for column ' + unicode(column_name) + ' is : ' + unicode(query), DEBUG)
-                log_to_postgres('Stat for column ' + unicode(column_name) + ' is : ' + unicode(explain_summary['EstimatedRows']), DEBUG)
+                log_to_postgres('Explain query for column ' + str(column_name) + ' is : ' + str(query), DEBUG)
+                log_to_postgres('Stat for column ' + str(column_name) + ' is : ' + str(explain_summary['EstimatedRows']), DEBUG)
 
                 result.append(((column_name,), int(stats)))
 
-        except CypherError:
+        except CypherSyntaxError:
             raise RuntimeError("Bad cypher query : " + query)
+        except CypherTypeError:
+            raise RuntimeError("Bad cypher type in query : " + query)
         finally:
             session.close()
 
-        log_to_postgres('Columns stats are :' + unicode(result), DEBUG)
+        log_to_postgres('Columns stats are :' + str(result), DEBUG)
         return result
 
     def compute_table_stat(self):
@@ -269,15 +274,17 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         session = self.driver.session()
         try:
             rs = session.run('EXPLAIN ' + self.cypher, {})
-            explain_summary = rs.summary().plan[2]
+            explain_summary = rs.consume().plan['args']
             stats = explain_summary['EstimatedRows']
-            log_to_postgres('Stat for table is ' + unicode(explain_summary['EstimatedRows']), DEBUG)
-        except CypherError:
+            log_to_postgres('Stat for table is ' + str(explain_summary['EstimatedRows']), DEBUG)
+        except CypherSyntaxError:
             raise RuntimeError("Bad cypher query : " + cypher)
+        except CypherTypeError:
+            raise RuntimeError("Bad cypher type in query : " + cypher)
         finally:
             session.close()
 
-        log_to_postgres('Table stat is :' + unicode(stats), DEBUG)
+        log_to_postgres('Table stat is :' + str(stats), DEBUG)
         return stats
 
     def convert_to_pg(self, column, value):
@@ -285,7 +292,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         Convert a value to a PG type.
         We do nothing for now, but can be usefull for the futur
         """
-        #log_to_postgres('Convert column:' + unicode(column), DEBUG)
+        #log_to_postgres('Convert column:' + str(column), DEBUG)
         return value
 
     def convert_to_neo4j(self, column, value):
@@ -317,7 +324,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
          /!\ It seems that Multicorn doesn't support time convertion as well as `now()`
         """
         result = value
-        log_to_postgres('Convert '+ unicode(value)+ ' for neo4j column type:' + unicode(column.type_name), DEBUG)
+        log_to_postgres('Convert '+ str(value)+ ' for neo4j column type:' + str(column.type_name), DEBUG)
 
         # we want a date
         if column.type_name == 'date':
@@ -330,12 +337,12 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
             else:
                 # else we try to parse the string ...
                 try:
-                    parsed = parser.parse(unicode(value))
+                    parsed = parser.parse(str(value))
                     if parsed.tzinfo is not None:
                         parsed = parsed.replace(tzinfo=None)
                     result = parsed.date()
                 except Exception as e:
-                    log_to_postgres('Value ' + unicode(value) + ' of type ' + unicode(type(value)) + ' can not be compared with a date type field => ' +  unicode(e), ERROR)
+                    log_to_postgres('Value ' + str(value) + ' of type ' + str(type(value)) + ' can not be compared with a date type field => ' +  str(e), ERROR)
 
         # we want a time without timezone
         elif column.type_name == 'time without time zone':
@@ -348,12 +355,12 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
             # else we try to parse the string ...
             else:
                 try:
-                    parsed = parser.parse(unicode(value))
+                    parsed = parser.parse(str(value))
                     if parsed.tzinfo is not None:
                         parsed = parsed.replace(tzinfo=None)
                     result = datetime.time(parsed.hour, parsed.minute, parsed.second, parsed.microsecond)
                 except Exception as e:
-                    log_to_postgres('Value ' + unicode(value) + ' of type ' + unicode(type(value)) + ' can not be compared with a localtime field => ' +  unicode(e), ERROR)
+                    log_to_postgres('Value ' + str(value) + ' of type ' + str(type(value)) + ' can not be compared with a localtime field => ' +  str(e), ERROR)
 
         # we want a time with timezone
         elif column.type_name == 'time with time zone':
@@ -366,13 +373,13 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
             # else we try to parse the string ...
             else:
                 try:
-                    parsed = parser.parse(unicode(value))
+                    parsed = parser.parse(str(value))
                     tz = parsed.tzinfo
                     if parsed.tzinfo is None :
                         tz = pytz.utc
                     result = datetime.time(parsed.hour, parsed.minute, parsed.second, parsed.microsecond, tz)
                 except ValueError as e:
-                    log_to_postgres('Value ' + unicode(value) + ' of type ' + unicode(type(value)) + ' can not be compared with a time field => ' +  unicode(e), ERROR)
+                    log_to_postgres('Value ' + str(value) + ' of type ' + str(type(value)) + ' can not be compared with a time field => ' +  str(e), ERROR)
 
         elif column.type_name == 'timestamp without time zone':
             # if we have a datetime, we remove the tz
@@ -384,12 +391,12 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
             # Otherwise we try to parse the value as a string
             else:
                 try:
-                    parsed = parser.parse(unicode(value))
+                    parsed = parser.parse(str(value))
                     if parsed.tzinfo is not None:
                         parsed = parsed.replace(tzinfo=None)
                     result = parsed
                 except ValueError as e:
-                    log_to_postgres('Value ' + unicode(value) + ' of type ' + unicode(type(value)) + ' can not be compared with a localdatetime field => ' +  unicode(e), ERROR)
+                    log_to_postgres('Value ' + str(value) + ' of type ' + str(type(value)) + ' can not be compared with a localdatetime field => ' +  str(e), ERROR)
 
         elif column.type_name == 'timestamp with time zone':
             # if we have a datetime
@@ -404,13 +411,13 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
             # Otherwise we try to parse the value as a string
             else:
                 try:
-                    parsed = parser.parse(unicode(value))
+                    parsed = parser.parse(str(value))
                     if parsed.tzinfo is None:
                         parsed = parsed.replace(tzinfo=pytz.utc)
                     result = parsed
                 except ValueError as e:
-                    log_to_postgres('Value ' + unicode(value) + ' of type ' + unicode(type(value)) + ' can not be compared with a datetime field => ' +  unicode(e), ERROR)
+                    log_to_postgres('Value ' + str(value) + ' of type ' + str(type(value)) + ' can not be compared with a datetime field => ' +  str(e), ERROR)
 
-        log_to_postgres('Value is ' + unicode(result), DEBUG)
+        log_to_postgres('Value is ' + str(result), DEBUG)
         return result
 

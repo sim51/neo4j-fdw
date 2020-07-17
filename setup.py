@@ -8,5 +8,5 @@ setup(
       author_email     = neo4jPg.__email__,
       url              = neo4jPg.__url__,
       packages         = find_packages(),
-      install_requires = [ 'neo4j-driver', 'python-dateutil' ]
+      install_requires = [ 'neo4j', 'python-dateutil' ]
 )

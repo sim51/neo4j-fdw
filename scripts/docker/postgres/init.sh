@@ -7,7 +7,7 @@ if [ ! -d "/Multicorn" ]; then
   git clone git://github.com/Kozea/Multicorn.git
 fi
 cd Multicorn
-git checkout tags/v1.3.4
+sed -e '/preflight-check.sh/d;/preflight-check:/d;s/preflight-check //' -i.bak Makefile
 make && make install
 
 # Install neo4j fdw

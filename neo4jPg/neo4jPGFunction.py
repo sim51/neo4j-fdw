@@ -1,9 +1,12 @@
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG
-from neo4j import GraphDatabase, basic_auth, CypherError, __version__ as neo4jversion
+from neo4j import GraphDatabase, basic_auth, __version__ as neo4jversion
+from neo4j.exceptions import CypherSyntaxError, CypherTypeError
 import json
 import ast
 
-MAJOR,MINOR,PATCH = neo4jversion.split('.')
+MJR,MNR,PATCH = neo4jversion.split('.')
+MAJOR = int(MJR)
+MINOR = int(MNR)
 
 """
 Neo4j Postgres function
@@ -12,9 +15,9 @@ def cypher(plpy, query, params, url, login, password):
     """
         Make cypher query and return JSON result
     """
-    driver = GraphDatabase.driver( url, auth=basic_auth(login, password))
+    driver = GraphDatabase.driver( url, auth=basic_auth(login, password), encrypted=False)
     session = driver.session()
-    log_to_postgres("Cypher function with query " + query + " and params " + unicode(params), DEBUG)
+    log_to_postgres("Cypher function with query " + query + " and params " + str(params), DEBUG)
 
     # Execute & retrieve neo4j data
     try:
@@ -30,7 +33,7 @@ def cypher(plpy, query, params, url, login, password):
 
                 # In 1.6 series of neo4j python driver a change to way relationship types are
                 # constructed which means ABCMeta is __class__ and the mro needs to be checked
-                elif (MAJOR >= 1 and MINOR > 16) and any(c.__name__ == 'Relationship' for c in object.__class__.__mro__):
+                elif ((MAJOR >= 1 and MINOR > 16) or (MAJOR >= 4)) and any(c.__name__ == 'Relationship' for c in object.__class__.__mro__):
                     jsonResult += relation2json(object)
                 elif object.__class__.__name__ == "Relationship":
                     jsonResult += relation2json(object)
@@ -41,8 +44,10 @@ def cypher(plpy, query, params, url, login, password):
                     jsonResult += json.dumps(object)
             jsonResult += "}"
             yield jsonResult
-    except CypherError as ce:
+    except CypherSyntaxError as ce:
         raise RuntimeError("Bad cypher query: %s - Error message: %s" % (query,str(ce)))
+    except CypherTypeError as ce:
+        raise RuntimeError("Bad cypher type in query: %s - Error message: %s" % (query,str(ce)))
     finally:
         session.close()
 
@@ -97,7 +102,7 @@ def relation2json(rel):
     jsonResult = "{"
     jsonResult += '"id": ' + json.dumps(rel._id) + ','
 
-    if (MAJOR >= 1 and MINOR > 16):
+    if (MAJOR >= 1 and MINOR > 16) or (MAJOR >= 4):
         # In 1.6 series of neo4j python driver relationships have "type" attribute instead of "_type"
         jsonResult += '"type": ' + json.dumps(rel.type) + ','
         # In 1.6 series of neo4j python driver relationships contain their nodes
@@ -116,7 +121,7 @@ def path2json(path):
     """
     jsonResult = "["
 
-    if (MAJOR >= 1 and MINOR > 16):
+    if (MAJOR >= 1 and MINOR > 16) or (MAJOR >= 4):
         jsonResult += ",".join([relation2json(segment) for segment in path])
     else:
         # This seems to be broken?
@@ -135,6 +140,6 @@ def set_default(obj):
     """
         For JSON Serializer : convert set to list
     """
-    if isinstance(obj, set):
+    if isinstance(obj, frozenset) or isinstance(obj, set):
         return list(obj)
     raise TypeError
