@@ -8,9 +8,11 @@ if [ ! -d "/Multicorn" ]; then
 fi
 cd Multicorn
 git checkout tags/v1.3.4
-make && make install
+make PYTHON_OVERRIDE=python2.7 && make PYTHON_OVERRIDE=python2.7 install
+
 
 # Install neo4j fdw
 echo "~~~~~~~~~~~~~ Installing Neo4j FDW"
 cd /neo4j-fdw/source/
-make install
+make PYTHON=python2.7 install
+
