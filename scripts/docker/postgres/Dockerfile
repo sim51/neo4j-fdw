@@ -17,10 +17,7 @@ RUN apt-get update \
            python3-pip \
            postgresql-plpython3-10 \
            git \
-           libfaketime \
       && rm -rf /var/lib/apt/lists/*
-
-RUN cp /neo4j-fdw/source/scripts/faketime.sh /docker-entrypoint-initdb.d/
 
 RUN ["chmod", "+x", "/neo4j-fdw/source/scripts/docker/postgres/init.sh"]
 RUN /neo4j-fdw/source/scripts/docker/postgres/init.sh
