@@ -5,6 +5,7 @@ CREATE SERVER multicorn_neo4j FOREIGN DATA WRAPPER multicorn
   OPTIONS (
       wrapper  'neo4jPg.neo4jfdw.Neo4jForeignDataWrapper',
       url      'bolt://neo4j:7687',
+      database 'testdb',
       user     'neo4j',
       password 'admin'
   );
@@ -31,28 +32,28 @@ CREATE FOREIGN TABLE actedIn (
     movie_id bigint NOT NULL,
     person_id bigint NOT NULL
   ) SERVER multicorn_neo4j OPTIONS (
-    cypher 'MATCH (p:Person)-[r:ACTED_IN]->(m:Movie) RETURN id(r) AS id, id(p) AS person_id, id(m) AS movie_id'
+    cypher 'MATCH (p:Person)-[r:ACTED_IN]->(m:Movie) RETURN id(r) AS id, id(p) AS person_id, id(m) AS movie_id ORDER BY id DESC'
   );
 
 CREATE FOREIGN TABLE actedInWithCustomWhere1 (
     actor varchar NOT NULL,
     movie varchar NOT NULL
   ) SERVER multicorn_neo4j OPTIONS (
-    cypher 'MATCH (p:Person)-[:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name", "movie":"m.title"}*/ WITH p.name AS name, m.title AS title RETURN name AS actor, title AS movie'
+    cypher 'MATCH (p:Person)-[:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name", "movie":"m.title"}*/ WITH p.name AS name, m.title AS title, id(m) AS id ORDER BY id DESC RETURN name AS actor, title AS movie'
   );
 
 CREATE FOREIGN TABLE actedInWithCustomWhere2 (
     actor varchar NOT NULL,
     movie varchar NOT NULL
   ) SERVER multicorn_neo4j OPTIONS (
-    cypher 'MATCH (p:Person)-[:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name"}*/ WITH p.name AS name, m.title AS title RETURN name AS actor, title AS movie'
+    cypher 'MATCH (p:Person)-[:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name"}*/ WITH p.name AS name, m.title AS title, id(m) AS id ORDER BY id DESC RETURN name AS actor, title AS movie'
   );
 
 CREATE FOREIGN TABLE actedInWithCustomWheres (
     actor varchar NOT NULL,
     movie varchar NOT NULL
   ) SERVER multicorn_neo4j OPTIONS (
-    cypher 'MATCH (p:Person) /*WHERE{"actor":"p.name"}*/ WITH p MATCH (p)-[:ACTED_IN]->(m:Movie) /*WHERE{"movie":"m.title"}*/ RETURN p.name AS actor, m.title AS movie'
+    cypher 'MATCH (p:Person) /*WHERE{"actor":"p.name"}*/ WITH p MATCH (p)-[:ACTED_IN]->(m:Movie) /*WHERE{"movie":"m.title"}*/ WITH p, m ORDER BY id(m) DESC RETURN p.name AS actor, m.title AS movie'
   );
 
 CREATE FOREIGN TABLE temporal (
