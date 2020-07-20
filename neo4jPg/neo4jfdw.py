@@ -26,6 +26,10 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
             log_to_postgres('The Bolt url parameter is required and the default is "bolt://localhost:7687"', WARNING)
         self.url = options.get("url", "bolt://localhost:7687")
 
+        if 'database' not in options:
+            log_to_postgres('The database parameter is required and the default is "neo4j"', WARNING)
+        self.database = options.get("database", "neo4j")
+
         if 'user' not in options:
             log_to_postgres('The user parameter is required  and the default is "neo4j"', ERROR)
         self.user = options.get("user", "neo4j")
@@ -42,7 +46,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         self.columns = columns
 
         # Create a neo4j driver instance
-        self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password), encrypted=False)
+        self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password), database=self.database, encrypted=False)
 
         self.columns_stat = self.compute_columns_stat()
         self.table_stat = int(options.get("estimated_rows", -1))

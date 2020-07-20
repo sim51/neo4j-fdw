@@ -7,11 +7,11 @@ import ast
 """
 Neo4j Postgres function
 """
-def cypher(plpy, query, params, url, login, password):
+def cypher(plpy, query, params, url, dbname, login, password):
     """
         Make cypher query and return JSON result
     """
-    driver = GraphDatabase.driver( url, auth=basic_auth(login, password), encrypted=False)
+    driver = GraphDatabase.driver( url, auth=basic_auth(login, password), database=dbname, encrypted=False)
     session = driver.session()
     log_to_postgres("Cypher function with query " + query + " and params " + str(params), DEBUG)
 
@@ -56,18 +56,21 @@ def cypher_with_server(plpy, query, params, server):
         sql = "SELECT unnest(srvoptions) AS conf FROM pg_foreign_server WHERE srvname='" + server +"'"
 
     url = 'bolt://localhost'
+    dbname = 'neo4j'
     login = None
     password = None
 
     for row in plpy.cursor(sql):
         if row['conf'].startswith("url="):
             url = row['conf'].split("url=")[1]
+        if row['conf'].startswith("database="):
+            dbname = row['conf'].split("database=")[1]
         if row['conf'].startswith("user="):
             login = row['conf'].split("user=")[1]
         if row['conf'].startswith("password="):
             password = row['conf'].split("password=")[1]
 
-    for result in cypher(plpy, query, params, url, login, password):
+    for result in cypher(plpy, query, params, url, dbname, login, password):
         yield result
 
 
