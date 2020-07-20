@@ -7,6 +7,7 @@ from dateutil import parser
 from multicorn import ForeignDataWrapper, Qual, ANY, ALL
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG, INFO
 from neo4j import GraphDatabase, basic_auth, CypherError
+import neotime
 
 class Neo4jForeignDataWrapper(ForeignDataWrapper):
     """
@@ -283,10 +284,24 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
     def convert_to_pg(self, column, value):
         """
         Convert a value to a PG type.
-        We do nothing for now, but can be usefull for the futur
+        Most work implicitly, but neoTime.Time needs a helping hand when TimeZones are involved
         """
-        #log_to_postgres('Convert column:' + unicode(column), DEBUG)
-        return value
+        #log_to_postgres('Convert column:' + str(column), DEBUG)
+        result = value
+
+        # we want a time with timezone
+        if column.type_name == 'time with time zone':
+            if isinstance(value, neotime.Time):
+                try:
+                    tz = value.tzinfo         # Take TimeZone directly, since str(neotime.Time) does not expose this
+                    if value.tzinfo is None :
+                        tz = pytz.utc
+                    parsed = parser.parse(str(value))
+                    result = datetime.time(parsed.hour, parsed.minute, parsed.second, parsed.microsecond, tz)
+
+                except ValueError as e:
+                    log_to_postgres('Value ' + str(value) + ' of type ' + str(type(value)) + ' can not be compared with a time field => ' +  str(e), ERROR)
+        return result
 
     def convert_to_neo4j(self, column, value):
         """
