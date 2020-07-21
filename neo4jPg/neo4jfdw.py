@@ -25,10 +25,16 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         if 'url' not in options:
             log_to_postgres('The Bolt url parameter is required and the default is "bolt://localhost:7687"', WARNING)
         self.url = options.get("url", "bolt://localhost:7687")
-
-        if 'database' not in options:
-            log_to_postgres('The database parameter is required and the default is "neo4j"', WARNING)
-        self.database = options.get("database", "neo4j")
+        
+        if 'database' in options:
+            self.database = options.get("database")
+        else:
+            dbname_match = re.search("\?database=(.*)",self.url)
+            if dbname_match:
+                self.database = dbname_match.group(1)
+            else:
+                log_to_postgres('The database parameter is required and the default is "neo4j"', WARNING)
+                self.database = 'neo4j'
 
         if 'user' not in options:
             log_to_postgres('The user parameter is required  and the default is "neo4j"', ERROR)
