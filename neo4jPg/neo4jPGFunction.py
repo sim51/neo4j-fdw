@@ -16,11 +16,14 @@ def cypher(plpy, query, params, url, dbname, login, password):
         dbname_match = re.search("\?database=(.*)",url)
         if dbname_match:
             dbname = dbname_match.group(1)
-        else:
-            dbname = 'neo4j'
 
-    driver = GraphDatabase.driver( url, auth=basic_auth(login, password), database=dbname, encrypted=False)
+    if dbname is not None:
+        driver = GraphDatabase.driver( url, auth=basic_auth(login, password), encrypted=False, database=dbname)
+    else:
+        driver = GraphDatabase.driver( url, auth=basic_auth(login, password), encrypted=False)
+
     session = driver.session()
+
     log_to_postgres("Cypher function with query " + query + " and params " + str(params), DEBUG)
 
     # Execute & retrieve neo4j data
@@ -81,9 +84,6 @@ def cypher_with_server(plpy, query, params, server):
             login = row['conf'].split("user=")[1]
         if row['conf'].startswith("password="):
             password = row['conf'].split("password=")[1]
-
-    if dbname is None:
-        dbname = 'neo4j'
 
     for result in cypher(plpy, query, params, url, dbname, login, password):
         yield result

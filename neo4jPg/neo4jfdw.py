@@ -33,8 +33,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
             if dbname_match:
                 self.database = dbname_match.group(1)
             else:
-                log_to_postgres('The database parameter is required and the default is "neo4j"', WARNING)
-                self.database = 'neo4j'
+                self.database = None
 
         if 'user' not in options:
             log_to_postgres('The user parameter is required  and the default is "neo4j"', ERROR)
@@ -52,7 +51,10 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         self.columns = columns
 
         # Create a neo4j driver instance
-        self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password), database=self.database, encrypted=False)
+        if self.database is not None:
+            self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password), encrypted=False, database=self.database)
+        else:
+            self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password), encrypted=False)
 
         self.columns_stat = self.compute_columns_stat()
         self.table_stat = int(options.get("estimated_rows", -1))
