@@ -13,6 +13,18 @@ services:
       - "NEO4J_ACCEPT_LICENSE_AGREEMENT=yes"
       - "NEO4J_AUTH=neo4j/admin"
     container_name: "fdw-neo4j"
+    
+  legacy:
+    image: neo4j:3.5.14-enterprise
+    ports:
+      - "17474:7474"
+      - "17687:7687"
+    volumes:
+      - .:/source
+    environment:
+      - "NEO4J_ACCEPT_LICENSE_AGREEMENT=yes"
+      - "NEO4J_AUTH=neo4j/admin"
+    container_name: "fdw-legacy-neo4j"
 
   # Custom postgres from dokerfile
   postgres:
