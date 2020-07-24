@@ -8,6 +8,10 @@ from multicorn import ForeignDataWrapper, Qual, ANY, ALL
 from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG, INFO
 from neo4j import GraphDatabase, basic_auth
 from neo4j.exceptions import CypherSyntaxError, CypherTypeError
+import warnings
+from neo4j.meta import ExperimentalWarning
+
+warnings.filterwarnings("ignore", category=ExperimentalWarning)
 
 class Neo4jForeignDataWrapper(ForeignDataWrapper):
     """
@@ -51,10 +55,14 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         self.columns = columns
 
         # Create a neo4j driver instance
+        self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password), encrypted=False)
+
+        # Re-acquire driver if our remote supports multi-databases, AND a database name has been specified for use
         if self.database is not None:
-            self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password), encrypted=False, database=self.database)
-        else:
-            self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password), encrypted=False)
+            if self.driver.supports_multi_db():
+                self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password), encrypted=False, database=self.database)
+            else:
+                log_to_postgres("Connections to Neo4J v3.x and earlier cannot use parameter database = " + self.database, WARNING)
 
         self.columns_stat = self.compute_columns_stat()
         self.table_stat = int(options.get("estimated_rows", -1))

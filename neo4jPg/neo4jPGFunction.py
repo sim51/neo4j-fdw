@@ -3,6 +3,10 @@ from neo4j.exceptions import CypherSyntaxError, CypherTypeError
 import json
 import ast
 import re
+import warnings
+from neo4j.meta import ExperimentalWarning
+
+warnings.filterwarnings("ignore", category=ExperimentalWarning)
 
 """
 Neo4j Postgres function
@@ -16,12 +20,16 @@ def cypher(plpy, query, params, url, dbname, login, password):
         if dbname_match:
             dbname = dbname_match.group(1)
 
-    if dbname is not None:
-        driver = GraphDatabase.driver( url, auth=basic_auth(login, password), encrypted=False, database=dbname)
-    else:
-        driver = GraphDatabase.driver( url, auth=basic_auth(login, password), encrypted=False)
+    driver = GraphDatabase.driver( url, auth=basic_auth(login, password), encrypted=False)
 
-    session = driver.session()
+    if dbname is None:
+        session = driver.session()
+    else:
+        if driver.supports_multi_db():
+            session = driver.session(database=dbname)
+        else:
+            plpy.warning("Connections to Neo4J v3.x and earlier cannot use parameter database = " + dbname)
+            session = driver.session()
 
     plpy.debug("Cypher function with query " + query + " and params " + str(params))
 
