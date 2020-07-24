@@ -1,4 +1,5 @@
 neo4j-fdw_v*.zip
+setup--*.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

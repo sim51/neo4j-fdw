@@ -1,29 +1,29 @@
 \a
-SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS ''The Matrix'' RETURN id(m) AS id, m.title AS title, m.tagline AS tagline, m.released AS released ORDER BY id(m) DESC');
+SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS ''The Matrix'' RETURN id(m) AS id, m.title AS title, m.tagline AS tagline, m.released AS released ORDER BY id(m) DESC', '{}', 'multicorn_neo4j', 'testdb');
 cypher
 {"id":10,"title":"The Matrix Revolutions","tagline":"Everything that has a beginning has an end","released":2003}
 {"id":9,"title":"The Matrix Reloaded","tagline":"Free your mind","released":2003}
 {"id":0,"title":"The Matrix","tagline":"Welcome to the Real World","released":1999}
 (3 rows)
-SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS "The Matrix" RETURN id(m) AS id, m.title AS title, m.tagline AS tagline, m.released AS released ORDER BY id(m) DESC');
+SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS "The Matrix" RETURN id(m) AS id, m.title AS title, m.tagline AS tagline, m.released AS released ORDER BY id(m) DESC', '{}', 'multicorn_neo4j', 'testdb');
 cypher
 {"id":10,"title":"The Matrix Revolutions","tagline":"Everything that has a beginning has an end","released":2003}
 {"id":9,"title":"The Matrix Reloaded","tagline":"Free your mind","released":2003}
 {"id":0,"title":"The Matrix","tagline":"Welcome to the Real World","released":1999}
 (3 rows)
-SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS $search RETURN id(m) AS id, m.title AS title, m.tagline AS tagline, m.released AS released ORDER BY id(m) DESC','{''search'':''Matrix''}');
+SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS $search RETURN id(m) AS id, m.title AS title, m.tagline AS tagline, m.released AS released ORDER BY id(m) DESC','{''search'':''Matrix''}', 'multicorn_neo4j', 'testdb');
 cypher
 {"id":10,"title":"The Matrix Revolutions","tagline":"Everything that has a beginning has an end","released":2003}
 {"id":9,"title":"The Matrix Reloaded","tagline":"Free your mind","released":2003}
 {"id":0,"title":"The Matrix","tagline":"Welcome to the Real World","released":1999}
 (3 rows)
-SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS $search RETURN id(m) AS id, m.title AS title, m.tagline AS tagline, m.released AS released ORDER BY id(m) DESC','{"search":"Matrix"}');
+SELECT *  FROM cypher('MATCH (m:Movie)  WHERE m.title CONTAINS $search RETURN id(m) AS id, m.title AS title, m.tagline AS tagline, m.released AS released ORDER BY id(m) DESC','{"search":"Matrix"}', 'multicorn_neo4j', 'testdb');
 cypher
 {"id":10,"title":"The Matrix Revolutions","tagline":"Everything that has a beginning has an end","released":2003}
 {"id":9,"title":"The Matrix Reloaded","tagline":"Free your mind","released":2003}
 {"id":0,"title":"The Matrix","tagline":"Welcome to the Real World","released":1999}
 (3 rows)
-SELECT name, born  FROM cypher('MATCH (p:Person)-[r:ACTED_IN]->(m:Movie) WHERE m.title=$movie RETURN p.name AS name, p.born AS born ORDER BY born DESC','{"movie":"The Matrix"}') , json_to_record(cypher) as x(name varchar, born smallint);
+SELECT name, born  FROM cypher('MATCH (p:Person)-[r:ACTED_IN]->(m:Movie) WHERE m.title=$movie RETURN p.name AS name, p.born AS born ORDER BY born DESC','{"movie":"The Matrix"}', 'multicorn_neo4j', 'testdb') , json_to_record(cypher) as x(name varchar, born smallint);
 name|born
 Emil Eifrem|1978
 Carrie-Anne Moss|1967

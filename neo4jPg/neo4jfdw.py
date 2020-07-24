@@ -27,17 +27,12 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
         # Managed server option
         if 'url' not in options:
-            log_to_postgres('The Bolt url parameter is required and the default is "bolt://localhost:7687"', WARNING)
-        self.url = options.get("url", "bolt://localhost:7687")
-        
-        if 'database' in options:
-            self.database = options.get("database")
-        else:
-            dbname_match = re.search("\?database=(.*)",self.url)
-            if dbname_match:
-                self.database = dbname_match.group(1)
-            else:
-                self.database = None
+            log_to_postgres('The Neo4j url parameter is required and the default is "neo4j://localhost:7687"', WARNING)
+        self.url = options.get("url", "neo4j://localhost:7687")
+
+        if 'database' not in options:
+            log_to_postgres('The Neo4j database parameter is required for neo4j > 4.0 and the default is "neo4j"', WARNING)
+        self.database = options.get("database", "neo4j")
 
         if 'user' not in options:
             log_to_postgres('The user parameter is required  and the default is "neo4j"', ERROR)
@@ -55,14 +50,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         self.columns = columns
 
         # Create a neo4j driver instance
-        self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password), encrypted=False)
-
-        # Re-acquire driver if our remote supports multi-databases, AND a database name has been specified for use
-        if self.database is not None:
-            if self.driver.supports_multi_db():
-                self.driver = GraphDatabase.driver( self.url, auth=basic_auth(self.user, self.password), encrypted=False, database=self.database)
-            else:
-                log_to_postgres("Connections to Neo4J v3.x and earlier cannot use parameter database = " + self.database, WARNING)
+        self.driver = GraphDatabase.driver( self.url, auth=(self.user, self.password))
 
         self.columns_stat = self.compute_columns_stat()
         self.table_stat = int(options.get("estimated_rows", -1))
@@ -106,7 +94,11 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         log_to_postgres('With params : ' + str(params), DEBUG)
 
         # Execute & retrieve neo4j data
-        session = self.driver.session()
+        if self.driver.supports_multi_db():
+            session = self.driver.session(database=self.database)
+        else:
+            session = driver.session()
+
         try:
             for record in session.run(statement, params):
                 line = {}
@@ -265,7 +257,12 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
     def compute_columns_stat(self):
         result = list();
 
-        session = self.driver.session()
+        # Execute & retrieve neo4j data
+        if self.driver.supports_multi_db():
+            session = self.driver.session(database=self.database)
+        else:
+            session = driver.session()
+
         try:
             for column_name in self.columns:
                 quals = [Qual(column_name, '=', 'WHATEVER')];
@@ -291,7 +288,10 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
     def compute_table_stat(self):
         stats = 100000000
-        session = self.driver.session()
+        if self.driver.supports_multi_db():
+            session = self.driver.session(database=self.database)
+        else:
+            session = driver.session()
         try:
             rs = session.run('EXPLAIN ' + self.cypher, {})
             explain_summary = rs.consume().plan['args']

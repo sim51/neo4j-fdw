@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pip install --upgrade pip
+pip3 install --upgrade pip
 
 # Install Multicorn
 echo "~~~~~~~~~~~~~ Installing multicorn"
@@ -9,6 +9,7 @@ if [ ! -d "/Multicorn" ]; then
   git clone git://github.com/Kozea/Multicorn.git
 fi
 cd Multicorn
+git checkout "tags/v$1"
 sed -e '/preflight-check.sh/d;/preflight-check:/d;s/preflight-check //' -i.bak Makefile
 make && make install
 
@@ -16,3 +17,4 @@ make && make install
 echo "~~~~~~~~~~~~~ Installing Neo4j FDW"
 cd /neo4j-fdw/source/
 make install
+

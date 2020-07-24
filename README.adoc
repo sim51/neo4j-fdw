@@ -9,6 +9,8 @@ Moreover, you can directly write a cypher query in your select.
 
 == Compatibility matrice
 
+=== Dependencies
+
 The project has two main dependencies https://github.com/Segfault-Inc/Multicorn[Multicorn] and
 https://github.com/neo4j/neo4j-python-driver/[Neo4j Python driver].
 
@@ -30,8 +32,12 @@ Multicorn is used for the Postgres FDW layer, so the compatibility with postgres
 | 2.6 or  >= 3.3
 
 | 1.3.4
-| >= 9.2 and <=10
-| 2.7 or  >= 3.3
+| >= 9.2 and =<10
+| 2.7 or  >= 3.6
+
+| 1.4.0
+| >= 9.2 and <=12
+| 2.7 or  >= 3.6
 
 |===
 
@@ -58,7 +64,15 @@ The Neo4j driver is used for the communication with Neo4j, so the compatibility 
 
 |===
 
-NOTE: Each driver release (from 4.0 upwards) is built specifically to work with a corresponding Neo4j release, i.e. that with the same major.minor version number.
+NOTE: Each Neo4j driver release (from 4.0 upwards) is built specifically to work with a corresponding Neo4j release, i.e. that with the same major.minor version number.
+
+=== Version of neo4j-fdw
+
+The version *1.1.x* of the project are based on MultiCorn *1.3.4* and the Neo4j driver *<= 1.7*
+Upper versions are based on MultiCorn *1.4.0*
+
+To simplify the understanding of the compatibilty, the project now follows the Neo4j driver version (that's why There is no 2.X & 3.X).
+The major & minor version of the project will be linked to the Neo4j driver version, so *4.0.Z* means that's the project is using the version *4.0* of the driver.
 
 == How to install
 
@@ -73,7 +87,7 @@ $> sudo pgxn install neo4j-fdw
 
 Easy, no ?
 
-NOTE: If you have some troubles, please check that all the project dependencies are installed by PGXN (specially the neo4j driver : `pip install neo4j`). 
+NOTE: If you have some troubles, please check that all the project dependencies are installed by PGXN (specially the neo4j driver : `pip install neo4j`).
 
 === From the sources
 
@@ -85,12 +99,12 @@ There is some Postgresql & Python requirements to use this project  :
  * postgresql-plpython
  * Postgresql development packages
  * Python development packages
- * python 2.7 or >= python 3.3 as your default python with pip
+ * python 3.3 or >= as your default python with pip
 
 On a debian system, you can directly type this command :
 
 ----
-$> sudo apt-get install build-essential postgresql-server-dev-10 python-dev python-setuptools python-dev python-pip postgresql-plpython-10
+$> sudo apt-get install build-essential postgresql-server-dev-10 python3-dev python3-setuptools python3-pip postgresql-plpython3-10
 ----
 
 ==== Installing multicorn
@@ -98,18 +112,11 @@ $> sudo apt-get install build-essential postgresql-server-dev-10 python-dev pyth
 This project is based on Multicorn, so you have to install it.
 
 
-NOTE: If you are using *PG 9.1*, you should use the *0.9.X* version (`git checkout v0.9.3`).
-For *PG > 9.2*, you should use the *1.X* version (`git checkout v1.3.4`)
-
-NOTE: If you are using Neo4j 1.7 drivers, you should use version 1.1.X version (`git checkout v01.1.2`)
-NOTE: If you are using Neo4j 4.X drivers, you should use version 1.2.X version (`git checkout v01.2`)
-         Also, Neo4j 4.X drivers require python >= 3.5
-
 ----
 $> cd /tmp
 $> git clone git://github.com/Kozea/Multicorn.git
 $> cd Multicorn
-$> git checkout tags/v1.3.4
+$> git checkout tags/v1.4.0
 $> make && make install
 ----
 
@@ -153,7 +160,7 @@ mydatabase=#
 CREATE SERVER multicorn_neo4j FOREIGN DATA WRAPPER multicorn
   OPTIONS (
       wrapper  'neo4jPg.neo4jfdw.Neo4jForeignDataWrapper',
-      url      'bolt://172.17.0.1:7687',
+      url      'neo4j://172.17.0.1:7687',
       user     'neo4j',
       password 'admin'
   );
@@ -161,23 +168,25 @@ CREATE SERVER multicorn_neo4j FOREIGN DATA WRAPPER multicorn
 
 Connection options are
 
- * `url`      The bolt url for Neo4j (default is bolt://localhost:7687)
+ * `url`      The neo4j url for Neo4j (default is neo4j://localhost:7687)
  * `user`     User for Neo4j
  * `password` password of the Neo4j user
-
 
 === Create a foreign table
 
 Now you can create a foreign table that match a cypher query.
 
-IMPORTANT: Your cypher query must return a collection, annd you have to give an alias on each return variable.
+IMPORTANT: Your cypher query must return a collection, and you have to give an alias on each return variable.
+
+NOTE: You can specify the neo4j database name. If itis omitted, the default value is 'neo4j'
 
 ----
 mydatabase=#
 CREATE FOREIGN TABLE neo4j_movie (
     movie varchar
   ) SERVER multicorn_neo4j OPTIONS (
-    cypher 'MATCH (n:Movie) RETURN n.title as movie'
+    cypher 'MATCH (n:Movie) RETURN n.title as movie',
+    database 'neo4j'
   );
 ----
 
@@ -244,34 +253,42 @@ You have to declare those functions into your database, before to use it.
 
 ----
 mydatabase=#
-CREATE EXTENSION plpythonu;
+CREATE EXTENSION plpythonu3;
 
 mydatabase=#
 CREATE OR REPLACE FUNCTION cypher(query text) RETURNS SETOF json
-LANGUAGE plpythonu
+LANGUAGE plpythonu3
 AS $$
 from neo4jPg import neo4jPGFunction
 for result in neo4jPGFunction.cypher_default_server(plpy, query, '{}'):
     yield result
 $$;
 CREATE OR REPLACE FUNCTION cypher(query text, params text) RETURNS SETOF json
-LANGUAGE plpythonu
+LANGUAGE plpythonu3
 AS $$
 from neo4jPg import neo4jPGFunction
 for result in neo4jPGFunction.cypher_default_server(plpy, query, params):
     yield result
 $$;
 CREATE OR REPLACE FUNCTION cypher(query text, params text, server text) RETURNS SETOF json
-LANGUAGE plpythonu
+LANGUAGE plpythonu3
 AS $$
 from neo4jPg import neo4jPGFunction
 for result in neo4jPGFunction.cypher_with_server(plpy, query, params, server):
+    yield result
+$$;
+CREATE OR REPLACE FUNCTION cypher(query text, params text, server text, dbname text) RETURNS SETOF json
+LANGUAGE plpythonu3
+AS $$
+from neo4jPg import neo4jPGFunction
+for result in neo4jPGFunction.cypher_with_server(plpy, query, params, server, dbname):
     yield result
 $$;
 ----
 
 This define three functions :
 
+ * `cypher(query, params, server, dbname)` : make a cypher query on the database `dbname` of the foreign server specify (server is the name of the foreign server. Example `multicorn_neo4j`) : `SELECT * FROM cypher('MATCH (n)-[r]->(m) RETURN n,r,m LIMIT 10', '{}', 'multicorn_neo4j', 'myDb')`
  * `cypher(query, params, server)` : make a cypher query on the foreign server specify (server is the name of the foreign server. Example `multicorn_neo4j`) : `SELECT * FROM cypher('MATCH (n)-[r]->(m) RETURN n,r,m LIMIT 10', '{}', 'multicorn_neo4j')`
  * `cypher(query, params)` : make a cypher query on the first foreign server defined, with neo4j query parameter : `SELECT *  FROM cypher('MATCH (n:Movie) WHERE n.title CONTAINS $name RETURN n.title AS title LIMIT 10', '{"name":"Matrix"}');`
  * `cypher(query)` : make a cypher query on the first foreign server defined : `SELECT * FROM cypher('MATCH (n)-[r]->(m) RETURN n,r,m LIMIT 10')`

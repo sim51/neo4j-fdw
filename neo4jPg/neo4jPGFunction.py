@@ -15,21 +15,13 @@ def cypher(plpy, query, params, url, dbname, login, password):
     """
         Make cypher query and return JSON result
     """
-    if dbname is None:
-        dbname_match = re.search("\?database=(.*)",url)
-        if dbname_match:
-            dbname = dbname_match.group(1)
+    driver = GraphDatabase.driver( url, auth=(login, password), encrypted=False)
 
-    driver = GraphDatabase.driver( url, auth=basic_auth(login, password), encrypted=False)
-
-    if dbname is None:
-        session = driver.session()
+    # Execute & retrieve neo4j data
+    if driver.supports_multi_db():
+        session = driver.session(database=(dbname or 'neo4j'))
     else:
-        if driver.supports_multi_db():
-            session = driver.session(database=dbname)
-        else:
-            plpy.warning("Connections to Neo4J v3.x and earlier cannot use parameter database = " + dbname)
-            session = driver.session()
+        session = driver.session()
 
     plpy.debug("Cypher function with query " + query + " and params " + str(params))
 
@@ -65,7 +57,7 @@ def cypher(plpy, query, params, url, dbname, login, password):
     finally:
         session.close()
 
-def cypher_with_server(plpy, query, params, server):
+def cypher_with_server(plpy, query, params, server, dbname="neo4j"):
     """
         Make cypher query and return JSON result
     """
@@ -74,19 +66,12 @@ def cypher_with_server(plpy, query, params, server):
         sql = "SELECT unnest(srvoptions) AS conf FROM pg_foreign_server WHERE srvname='" + server +"'"
 
     url = 'bolt://localhost'
-    dbname = None
     login = None
     password = None
 
     for row in plpy.cursor(sql):
         if row['conf'].startswith("url="):
             url = row['conf'].split("url=")[1]
-            if dbname is None:
-                dbname_match = re.search("\?database=(.*)",url)
-                if dbname_match:
-                    dbname = dbname_match.group(1)
-        if row['conf'].startswith("database="):
-            dbname = row['conf'].split("database=")[1]
         if row['conf'].startswith("user="):
             login = row['conf'].split("user=")[1]
         if row['conf'].startswith("password="):

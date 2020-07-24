@@ -1,7 +1,3 @@
-:USE system;
-CREATE DATABASE testdb IF NOT EXISTS;
-:USE testdb;
-
 CREATE CONSTRAINT ON (n:Movie) ASSERT n.title IS UNIQUE;
 CREATE CONSTRAINT ON (n:Movie) ASSERT exists(n.title);
 CREATE CONSTRAINT ON (n:Person) ASSERT n.name IS UNIQUE;

@@ -12,6 +12,7 @@ CREATE FOREIGN TABLE movie (
     released smallint,
     tagline varchar
   ) SERVER multicorn_neo4j OPTIONS (
+    database 'testdb',
     cypher 'MATCH (n:Movie) RETURN id(n) AS id, n.title AS title, n.released AS released, n.tagline AS tagline'
   );
 CREATE FOREIGN TABLE person (
@@ -26,6 +27,7 @@ CREATE FOREIGN TABLE actedIn (
     movie_id bigint NOT NULL,
     person_id bigint NOT NULL
   ) SERVER multicorn_neo4j OPTIONS (
+    database 'testdb',
     cypher 'MATCH (p:Person)-[r:ACTED_IN]->(m:Movie) RETURN id(r) AS id, id(p) AS person_id, id(m) AS movie_id'
   );
 
@@ -37,6 +39,7 @@ CREATE FOREIGN TABLE temporal (
   my_localdatetime TIMESTAMP,
   my_duration INTERVAL
   ) SERVER multicorn_neo4j OPTIONS (
+    database 'testdb',
     cypher 'MATCH (n:TemporalNode) RETURN n.date AS my_date, n.time AS my_time, n.localtime AS my_localtime, n.datetime AS my_datetime, n.localdatetime AS my_localdatetime, n.duration AS my_duration'
   );
 
@@ -60,5 +63,12 @@ LANGUAGE plpythonu
 AS $$
 from neo4jPg import neo4jPGFunction
 for result in neo4jPGFunction.cypher_with_server(plpy, query, params, server):
+    yield result
+$$;
+CREATE OR REPLACE FUNCTION cypher(query text, params text, server text, dbname text) RETURNS SETOF json
+LANGUAGE plpythonu
+AS $$
+from neo4jPg import neo4jPGFunction
+for result in neo4jPGFunction.cypher_with_server(plpy, query, params, server, dbname):
     yield result
 $$;

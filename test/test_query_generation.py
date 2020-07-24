@@ -11,6 +11,7 @@ class QueryGenerationTest(unittest.TestCase):
             'url':'bolt://fdw-neo4j',
             'user':'neo4j',
             'password':'admin',
+            'database':'testdb',
             'cypher':'MATCH (n:Movie) RETURN n.title as movie'
         };
         columns = ['movie'];
@@ -28,6 +29,7 @@ class QueryGenerationTest(unittest.TestCase):
             'url':'bolt://fdw-neo4j',
             'user':'neo4j',
             'password':'admin',
+            'database':'testdb',
             'cypher':'MATCH (n:Movie) RETURN n.title as movie'
         };
         columns = ['movie'];
@@ -45,6 +47,7 @@ class QueryGenerationTest(unittest.TestCase):
             'url':'bolt://fdw-neo4j',
             'user':'neo4j',
             'password':'admin',
+            'database':'testdb',
             'cypher':'MATCH (p:Person)-[r:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name", "movie":"m.title"}*/ WITH p.name AS name, m.title AS title, r /*WHERE{"roles":"r.roles"}*/ RETURN name AS actor, title AS movie, r.roles AS roles'
         }
         columns = ['actor', 'movie'];
@@ -62,6 +65,7 @@ class QueryGenerationTest(unittest.TestCase):
             'url':'bolt://fdw-neo4j',
             'user':'neo4j',
             'password':'admin',
+            'database':'testdb',
             'cypher':'MATCH (p:Person)-[:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name", "movie":"m.title"}*/ WITH p.name AS name, m.title AS title RETURN name AS actor, title AS movie'
         }
         columns = ['actor', 'movie'];
@@ -83,6 +87,7 @@ class QueryGenerationTest(unittest.TestCase):
             'url':'bolt://fdw-neo4j',
             'user':'neo4j',
             'password':'admin',
+            'database':'testdb',
             'cypher':'MATCH (p:Person)-[:ACTED_IN]->(m:Movie) /*WHERE{"actor":"p.name"}*/ WITH p.name AS name, m.title AS title RETURN name AS actor, title AS movie'
         }
         columns = ['actor', 'movie'];
@@ -101,6 +106,7 @@ class QueryGenerationTest(unittest.TestCase):
             'url':'bolt://fdw-neo4j',
             'user':'neo4j',
             'password':'admin',
+            'database':'testdb',
             'cypher':'MATCH (p:Person) /*WHERE{"actor":"p.name"}*/ WITH p MATCH (p)-[:ACTED_IN]->(m:Movie) /*WHERE{"movie":"m.title"}*/ RETURN p.name AS actor, m.title AS movie'
         }
         columns = ['actor', 'movie'];

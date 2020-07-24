@@ -4,25 +4,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 cd $DIR
 cd ..
 
-loadNeo4j(){
-  neoImage=$1
-  neoPort=$2
-  
-  echo "~~~"
-  echo "~ Loading Movie database"
-  echo "~~~"
-  # Wait until the database is up and ready
-  echo "~~~"
-  echo "~ Waiting Neo4j to be ready"
-  echo "~~~"
-  until $(curl --output /dev/null --silent --head --fail http://localhost:$neoPort); do
-    printf '.'
-    sleep 1
-  done
-  echo
-  docker exec -it $neoImage /source/scripts/docker/neo4j/init-$neoImage.sh
-}
-
 ####################################################################
 # Before all tests
 ####################################################################
@@ -38,8 +19,15 @@ echo "~ Install/Update extension in Postgres"
 echo "~~~"
 docker exec -it fdw-pg /source/scripts/docker/postgres/init.sh
 
-loadNeo4j 'fdw-neo4j' 7474
-loadNeo4j 'fdw-legacy-neo4j' 17474
+echo "~~~"
+echo "~ Waiting Neo4j to be ready"
+echo "~~~"
+until $(curl --output /dev/null --silent --head --fail http://localhost:7474); do
+  printf '.'
+  sleep 1
+done
+echo
+docker exec -it fdw-neo4j /source/scripts/docker/neo4j/init.sh
 
 ####################################################################
 # Run python unit test
@@ -66,8 +54,7 @@ echo "~ Running pg_regress tests"
 echo "~~~"
 echo
 
-echo "~ Execute pg_regress Neo4J-v4 tests"
-docker exec -it fdw-pg /source/scripts/current.sh
+echo "~ Execute pg_regress tests"
 docker exec -it fdw-pg /source/scripts/pg_regress.sh /source/test
 if [ $? -gt 0 ]; then
   echo "Some regress test failed"
@@ -75,15 +62,4 @@ if [ $? -gt 0 ]; then
   exit 1
 fi
 
-echo "~ Execute pg_regress Neo4J-legacy tests"
-docker exec -it fdw-pg /source/scripts/legacy.sh
-docker exec -it fdw-pg /source/scripts/pg_regress.sh /source/test
-if [ $? -gt 0 ]; then
-  echo "Some regress test failed"
-  docker exec -it fdw-pg /source/scripts/current.sh
-  docker-compose down
-  exit 1
-fi
-
-docker exec -it fdw-pg /source/scripts/current.sh
 docker-compose down

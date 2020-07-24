@@ -19,14 +19,15 @@ test:
 install: python_code
 
 python_code:
+	echo $(PYTHON)
 	cp ./setup.py ./setup--$(EXTVERSION).py
 	sed -i -e "s/__VERSION__/$(EXTVERSION)/g" ./setup--$(EXTVERSION).py
 	$(PYTHON) ./setup--$(EXTVERSION).py install
 	rm ./setup--$(EXTVERSION).py
 
 clean:
-	@$(PYTHON) setup.py clean
-	@rm -f $(PKGDIR)/$(NAME)-$(EXTVERSION)-py$(PYVERSION).egg
+	$(PYTHON) setup.py clean
+	rm -f $(PKGDIR)/$(NAME)-$(EXTVERSION)-py$(PYVERSION).egg
 
 
 PG_CONFIG = pg_config
