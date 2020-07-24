@@ -64,7 +64,7 @@ NOTE: Each driver release (from 4.0 upwards) is built specifically to work with 
 
 === With PGXN
 
-Just type those command :
+Just type those commands :
 
 ----
 $> sudo pgxn install multicorn
@@ -72,6 +72,8 @@ $> sudo pgxn install neo4j-fdw
 ----
 
 Easy, no ?
+
+NOTE: If you have some troubles, please check that all the project dependencies are installed by PGXN (specially the neo4j driver : `pip install neo4j`). 
 
 === From the sources
 
