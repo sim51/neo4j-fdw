@@ -18,7 +18,7 @@ test:
 
 install: python_code
 
-python_code: setup.py
+python_code:
 	cp ./setup.py ./setup--$(EXTVERSION).py
 	sed -i -e "s/__VERSION__/$(EXTVERSION)/g" ./setup--$(EXTVERSION).py
 	$(PYTHON) ./setup--$(EXTVERSION).py install
