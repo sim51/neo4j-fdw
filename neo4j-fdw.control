@@ -1,4 +1,4 @@
 comment = 'Neo4j multicorn foreign data wrapper extension for PostgreSQL'
-default_version = '4.0.0-dev'
+default_version = '4.0.1-dev'
 module_pathname = '$libdir/neo4jPg'
 relocatable = true

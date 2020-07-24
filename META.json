@@ -8,7 +8,7 @@
   "prereqs": {
     "runtime": {
       "requires": {
-        "Python": "3.3",
+        "Python": "3.3.0",
         "PostgreSQL": "9.1.0"
       }
     }
