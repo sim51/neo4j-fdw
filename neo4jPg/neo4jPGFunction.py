@@ -1,4 +1,3 @@
-from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG
 from neo4j import GraphDatabase, basic_auth
 from neo4j.exceptions import CypherSyntaxError, CypherTypeError
 import json
@@ -24,7 +23,7 @@ def cypher(plpy, query, params, url, dbname, login, password):
 
     session = driver.session()
 
-    log_to_postgres("Cypher function with query " + query + " and params " + str(params), DEBUG)
+    plpy.debug("Cypher function with query " + query + " and params " + str(params))
 
     # Execute & retrieve neo4j data
     try:
