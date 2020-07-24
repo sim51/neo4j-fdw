@@ -25,8 +25,6 @@ fi
 echo "Pushing"
 git push
 
-echo "Pushing"
-git push
 
 echo "~ Generate the project archive"
 git archive --format zip --prefix=neo4j-fdw_v$version/ --output ./neo4j-fdw_v$version.zip HEAD
