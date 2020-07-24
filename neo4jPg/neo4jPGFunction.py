@@ -1,20 +1,37 @@
-from multicorn.utils import log_to_postgres, ERROR, WARNING, DEBUG
-from neo4j import GraphDatabase, basic_auth, CypherError, __version__ as neo4jversion
+from neo4j import GraphDatabase, basic_auth
+from neo4j.exceptions import CypherSyntaxError, CypherTypeError
 import json
 import ast
+import re
+import warnings
+from neo4j.meta import ExperimentalWarning
 
-MAJOR,MINOR,PATCH = neo4jversion.split('.')
+warnings.filterwarnings("ignore", category=ExperimentalWarning)
 
 """
 Neo4j Postgres function
 """
-def cypher(plpy, query, params, url, login, password):
+def cypher(plpy, query, params, url, dbname, login, password):
     """
         Make cypher query and return JSON result
     """
-    driver = GraphDatabase.driver( url, auth=basic_auth(login, password))
-    session = driver.session()
-    log_to_postgres("Cypher function with query " + query + " and params " + unicode(params), DEBUG)
+    if dbname is None:
+        dbname_match = re.search("\?database=(.*)",url)
+        if dbname_match:
+            dbname = dbname_match.group(1)
+
+    driver = GraphDatabase.driver( url, auth=basic_auth(login, password), encrypted=False)
+
+    if dbname is None:
+        session = driver.session()
+    else:
+        if driver.supports_multi_db():
+            session = driver.session(database=dbname)
+        else:
+            plpy.warning("Connections to Neo4J v3.x and earlier cannot use parameter database = " + dbname)
+            session = driver.session()
+
+    plpy.debug("Cypher function with query " + query + " and params " + str(params))
 
     # Execute & retrieve neo4j data
     try:
@@ -30,7 +47,7 @@ def cypher(plpy, query, params, url, login, password):
 
                 # In 1.6 series of neo4j python driver a change to way relationship types are
                 # constructed which means ABCMeta is __class__ and the mro needs to be checked
-                elif (MAJOR >= 1 and MINOR > 16) and any(c.__name__ == 'Relationship' for c in object.__class__.__mro__):
+                elif any(c.__name__ == 'Relationship' for c in object.__class__.__mro__):
                     jsonResult += relation2json(object)
                 elif object.__class__.__name__ == "Relationship":
                     jsonResult += relation2json(object)
@@ -41,8 +58,10 @@ def cypher(plpy, query, params, url, login, password):
                     jsonResult += json.dumps(object)
             jsonResult += "}"
             yield jsonResult
-    except CypherError as ce:
+    except CypherSyntaxError as ce:
         raise RuntimeError("Bad cypher query: %s - Error message: %s" % (query,str(ce)))
+    except CypherTypeError as ce:
+        raise RuntimeError("Bad cypher type in query: %s - Error message: %s" % (query,str(ce)))
     finally:
         session.close()
 
@@ -55,18 +74,25 @@ def cypher_with_server(plpy, query, params, server):
         sql = "SELECT unnest(srvoptions) AS conf FROM pg_foreign_server WHERE srvname='" + server +"'"
 
     url = 'bolt://localhost'
+    dbname = None
     login = None
     password = None
 
     for row in plpy.cursor(sql):
         if row['conf'].startswith("url="):
             url = row['conf'].split("url=")[1]
+            if dbname is None:
+                dbname_match = re.search("\?database=(.*)",url)
+                if dbname_match:
+                    dbname = dbname_match.group(1)
+        if row['conf'].startswith("database="):
+            dbname = row['conf'].split("database=")[1]
         if row['conf'].startswith("user="):
             login = row['conf'].split("user=")[1]
         if row['conf'].startswith("password="):
             password = row['conf'].split("password=")[1]
 
-    for result in cypher(plpy, query, params, url, login, password):
+    for result in cypher(plpy, query, params, url, dbname, login, password):
         yield result
 
 
@@ -97,13 +123,8 @@ def relation2json(rel):
     jsonResult = "{"
     jsonResult += '"id": ' + json.dumps(rel._id) + ','
 
-    if (MAJOR >= 1 and MINOR > 16):
-        # In 1.6 series of neo4j python driver relationships have "type" attribute instead of "_type"
-        jsonResult += '"type": ' + json.dumps(rel.type) + ','
-        # In 1.6 series of neo4j python driver relationships contain their nodes
-        jsonResult += '"nodes": [' + node2json(rel.nodes[0]) + ',' + node2json(rel.nodes[1]) + '],'
-    else:
-        jsonResult += '"type": ' + json.dumps(rel._type) + ','
+    jsonResult += '"type": ' + json.dumps(rel.type) + ','
+    jsonResult += '"nodes": [' + node2json(rel.nodes[0]) + ',' + node2json(rel.nodes[1]) + '],'
 
     jsonResult += '"properties": ' + json.dumps(rel._properties, default=set_default)
     jsonResult += "}"
@@ -116,16 +137,7 @@ def path2json(path):
     """
     jsonResult = "["
 
-    if (MAJOR >= 1 and MINOR > 16):
-        jsonResult += ",".join([relation2json(segment) for segment in path])
-    else:
-        # This seems to be broken?
-        if segment.start() is not None:
-            jsonResult += node2json(segment.start())
-
-        for segment in path:
-            jsonResult += "," + relation2json( segment.relationship() )
-            jsonResult += "," + node2json( segment.end() )
+    jsonResult += ",".join([relation2json(segment) for segment in path])
 
     jsonResult += "]"
 
@@ -135,6 +147,6 @@ def set_default(obj):
     """
         For JSON Serializer : convert set to list
     """
-    if isinstance(obj, set):
+    if isinstance(obj, frozenset) or isinstance(obj, set):
         return list(obj)
     raise TypeError

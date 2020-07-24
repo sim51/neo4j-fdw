@@ -101,6 +101,10 @@ This project is based on Multicorn, so you have to install it.
 NOTE: If you are using *PG 9.1*, you should use the *0.9.X* version (`git checkout v0.9.3`).
 For *PG > 9.2*, you should use the *1.X* version (`git checkout v1.3.4`)
 
+NOTE: If you are using Neo4j 1.7 drivers, you should use version 1.1.X version (`git checkout v01.1.2`)
+NOTE: If you are using Neo4j 4.X drivers, you should use version 1.2.X version (`git checkout v01.2`)
+         Also, Neo4j 4.X drivers require python >= 3.5
+
 ----
 $> cd /tmp
 $> git clone git://github.com/Kozea/Multicorn.git

@@ -70,9 +70,12 @@ class QueryGenerationTest(unittest.TestCase):
         quals = [Qual('movie', '=', 'The Matrix'), Qual('actor', '=', 'Keanu Reeves')];
         query = nfdw.make_cypher(quals, columns, None)
 
-        self.assertEqual(
-            'MATCH (p:Person)-[:ACTED_IN]->(m:Movie)  WHERE m.title=$`movie` AND p.name=$`actor` WITH p.name AS name, m.title AS title RETURN name AS actor, title AS movie',
-            query
+        self.assertIn(
+            query,
+            [
+                'MATCH (p:Person)-[:ACTED_IN]->(m:Movie)  WHERE p.name=$`actor` AND m.title=$`movie` WITH p.name AS name, m.title AS title RETURN name AS actor, title AS movie',
+                'MATCH (p:Person)-[:ACTED_IN]->(m:Movie)  WHERE m.title=$`movie` AND p.name=$`actor` WITH p.name AS name, m.title AS title RETURN name AS actor, title AS movie'
+            ]
         )
 
     def test_query_with_where_clauses_defined_by_user_and_generic(self):
