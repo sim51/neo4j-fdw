@@ -74,6 +74,8 @@ Upper versions are based on MultiCorn *1.4.0*
 To simplify the understanding of the compatibilty, the project now follows the Neo4j driver version (that's why There is no 2.X & 3.X).
 The major & minor version of the project will be linked to the Neo4j driver version, so *4.0.Z* means that's the project is using the version *4.0* of the driver.
 
+IMPORTANT: The current version (*4.0.0*) requires python *>= 3.3* and is compatible with Neo4j *3.5* & *4.0* and Pg *9.2* to *12*.
+
 == How to install
 
 === With PGXN
