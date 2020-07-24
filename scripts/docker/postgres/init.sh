@@ -1,5 +1,7 @@
 #!/bin/bash
 
+pip install --upgrade pip
+
 # Install Multicorn
 echo "~~~~~~~~~~~~~ Installing multicorn"
 cd ~
