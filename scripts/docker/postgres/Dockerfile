@@ -19,7 +19,7 @@ RUN apt-get update \
            python3-setuptools \
            python3-dev \
            python3-pip \
-           postgresql-plpython3-10 \
+           postgresql-plpython3-$POSTGRES_VERSION \
            git \
       && rm -rf /var/lib/apt/lists/*
 
