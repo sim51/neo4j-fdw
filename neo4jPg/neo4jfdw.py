@@ -97,7 +97,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         if self.driver.supports_multi_db():
             session = self.driver.session(database=self.database)
         else:
-            session = driver.session()
+            session = self.driver.session()
 
         try:
             for record in session.run(statement, params):
@@ -261,7 +261,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         if self.driver.supports_multi_db():
             session = self.driver.session(database=self.database)
         else:
-            session = driver.session()
+            session = self.driver.session()
 
         try:
             for column_name in self.columns:
@@ -291,7 +291,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
         if self.driver.supports_multi_db():
             session = self.driver.session(database=self.database)
         else:
-            session = driver.session()
+            session = self.driver.session()
         try:
             rs = session.run('EXPLAIN ' + self.cypher, {})
             explain_summary = rs.consume().plan['args']
