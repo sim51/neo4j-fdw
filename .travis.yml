@@ -8,6 +8,15 @@ script:
 jobs:
   include:
     - env:
+        - NEO4J_VERSION=3.5-enterprise
+        - POSTGRES_VERSION=10
+    - env:
+        - NEO4J_VERSION=3.5-enterprise
+        - POSTGRES_VERSION=11
+    - env:
+        - NEO4J_VERSION=3.5-enterprise
+        - POSTGRES_VERSION=12
+    - env:
         - NEO4J_VERSION=4.1-enterprise
         - POSTGRES_VERSION=10
     - env:
