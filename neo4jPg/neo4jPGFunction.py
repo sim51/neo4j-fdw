@@ -15,7 +15,7 @@ def cypher(plpy, query, params, url, dbname, login, password):
     """
         Make cypher query and return JSON result
     """
-    driver = GraphDatabase.driver( url, auth=(login, password), encrypted=False)
+    driver = GraphDatabase.driver(url, auth=(login, password))
 
     # Execute & retrieve neo4j data
     if driver.supports_multi_db():
