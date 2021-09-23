@@ -17,5 +17,5 @@ jobs:
       - name: "Running tests"
         run: ./scripts/test.sh
         env:
-          NEO4J_VERSION=${{ matrix.neo4j-version }}
-          POSTGRES_VERSION=${{ matrix.postgres-version }}
+          NEO4J_VERSION: ${{ matrix.neo4j-version }}
+          POSTGRES_VERSION: ${{ matrix.postgres-version }}
