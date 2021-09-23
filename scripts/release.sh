@@ -54,7 +54,7 @@ fi
 # Create the github release notes
 # based on https://www.npmjs.com/package/github-release-cli
 echo "Running github release github-release"
-github-release upload  --owner=sim51  --repo=neo4j-fdw  --tag="v$version"  --name="v$1"  --body="$(cat $tmpfile)"  neo4j-fdw_v$version.zip
+github-release upload  --owner=sim51  --repo=neo4j-fdw  --tag="v$version"  --release-name="v$1"  --body="$(cat $tmpfile)"  neo4j-fdw_v$version.zip
 
 echo "Go to next version for dev"
 cat ./neo4j-fdw.control | sed -e "s/default_version[[:space:]]*=[[:space:]]*'\([^']*\)'/default_version = '${next_version}-dev'/" > ./neo4j-fdw.control.new
