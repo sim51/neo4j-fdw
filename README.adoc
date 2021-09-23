@@ -1,6 +1,4 @@
-= Neo4j Postgres integration
-
-image:https://travis-ci.org/sim51/neo4j-fdw.svg?branch=master["Build Status", link="https://travis-ci.org/sim51/neo4j-fdw"]
+= Neo4j Postgres integration [![CI](https://github.com/sim51/neo4j-fdw/actions/workflows/test.yml/badge.svg)](https://github.com/sim51/neo4j-fdw/actions/workflows/test.yml)
 
 == Purpose
 
