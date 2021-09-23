@@ -6,7 +6,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.6"]
-        neo4j-version: ["3.5-enterprise", "4.3-enterprise"]
+        neo4j-version: ["4.3-enterprise"]
         postgres-version: ["10", "11", "12"]
     steps:
       - uses: actions/checkout@v2
