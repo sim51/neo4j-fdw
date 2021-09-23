@@ -17,7 +17,7 @@ docker-compose up --build -d
 echo "~~~"
 echo "~ Install/Update extension in Postgres"
 echo "~~~"
-docker exec -it -T fdw-pg /source/scripts/docker/postgres/init.sh
+docker exec -T fdw-pg /source/scripts/docker/postgres/init.sh
 
 echo "~~~"
 echo "~ Waiting Neo4j to be ready"
@@ -27,7 +27,7 @@ until $(curl --output /dev/null --silent --head --fail http://localhost:7474); d
   sleep 1
 done
 echo
-docker exec -it -T fdw-neo4j /source/scripts/docker/neo4j/init.sh
+docker exec -T fdw-neo4j /source/scripts/docker/neo4j/init.sh
 
 ####################################################################
 # Run python unit test
@@ -37,7 +37,7 @@ echo "~ Running python tests"
 echo "~~~"
 echo
 
-docker exec -it -T fdw-pg /source/scripts/python_test.sh
+docker exec -T fdw-pg /source/scripts/python_test.sh
 
 RESULT=$?
 if [ $RESULT -gt 0 ]; then
@@ -55,7 +55,7 @@ echo "~~~"
 echo
 
 echo "~ Execute pg_regress tests"
-docker exec -it -T fdw-pg /source/scripts/pg_regress.sh /source/test
+docker exec -T fdw-pg /source/scripts/pg_regress.sh /source/test
 if [ $? -gt 0 ]; then
   echo "Some regress test failed"
   docker-compose down
