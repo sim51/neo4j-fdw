@@ -1,4 +1,6 @@
-= Neo4j Postgres integration [![CI](https://github.com/sim51/neo4j-fdw/actions/workflows/test.yml/badge.svg)](https://github.com/sim51/neo4j-fdw/actions/workflows/test.yml)
+= Neo4j Postgres integration
+
+image:https://github.com/sim51/neo4j-fdw/actions/workflows/test.yml/badge.svg[GitHub Actions Status, link=https://github.com/sim51/neo4j-fdw/actions]
 
 == Purpose
 
