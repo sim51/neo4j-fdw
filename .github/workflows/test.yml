@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8"]
+        python-version: ["3.6"]
         neo4j-version: ["3.5-enterprise", "4.3-enterprise"]
         postgres-version: ["10", "11", "12"]
     steps:
@@ -13,7 +13,6 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - run: export NEO4J_VERSION=
       - name: "Running tests"
         run: ./scripts/test.sh
         env:

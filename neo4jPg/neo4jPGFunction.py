@@ -11,6 +11,8 @@ warnings.filterwarnings("ignore", category=ExperimentalWarning)
 """
 Neo4j Postgres function
 """
+
+
 def cypher(plpy, query, params, url, dbname, login, password):
     """
         Make cypher query and return JSON result
@@ -23,12 +25,13 @@ def cypher(plpy, query, params, url, dbname, login, password):
     else:
         session = driver.session()
 
-    plpy.debug("Cypher function with query " + query + " and params " + str(params))
+    plpy.debug("Cypher function with query " +
+               query + " and params " + str(params))
 
     # Execute & retrieve neo4j data
     try:
         for record in session.run(query, ast.literal_eval(params)):
-            jsonResult  = "{"
+            jsonResult = "{"
             for key in record.keys():
                 if len(jsonResult) > 1:
                     jsonResult += ","
@@ -51,11 +54,14 @@ def cypher(plpy, query, params, url, dbname, login, password):
             jsonResult += "}"
             yield jsonResult
     except CypherSyntaxError as ce:
-        raise RuntimeError("Bad cypher query: %s - Error message: %s" % (query,str(ce)))
+        raise RuntimeError(
+            "Bad cypher query: %s - Error message: %s" % (query, str(ce)))
     except CypherTypeError as ce:
-        raise RuntimeError("Bad cypher type in query: %s - Error message: %s" % (query,str(ce)))
+        raise RuntimeError(
+            "Bad cypher type in query: %s - Error message: %s" % (query, str(ce)))
     finally:
         session.close()
+
 
 def cypher_with_server(plpy, query, params, server, dbname="neo4j"):
     """
@@ -63,9 +69,9 @@ def cypher_with_server(plpy, query, params, server, dbname="neo4j"):
     """
     sql = "SELECT unnest(srvoptions) AS conf FROM pg_foreign_server"
     if server:
-        sql = "SELECT unnest(srvoptions) AS conf FROM pg_foreign_server WHERE srvname='" + server +"'"
+        sql = "SELECT unnest(srvoptions) AS conf FROM pg_foreign_server WHERE srvname='" + server + "'"
 
-    url = 'bolt://localhost'
+    url = 'neo4j://localhost'
     login = None
     password = None
 
@@ -88,14 +94,17 @@ def cypher_default_server(plpy, query, params):
     for result in cypher_with_server(plpy, query, params, None):
         yield result
 
+
 def node2json(node):
     """
         Convert a node to json
     """
     jsonResult = "{"
     jsonResult += '"id": ' + json.dumps(node._id) + ','
-    jsonResult += '"labels": ' + json.dumps(node._labels, default=set_default) + ','
-    jsonResult += '"properties": ' + json.dumps(node._properties, default=set_default)
+    jsonResult += '"labels": ' + \
+        json.dumps(node._labels, default=set_default) + ','
+    jsonResult += '"properties": ' + \
+        json.dumps(node._properties, default=set_default)
     jsonResult += "}"
 
     return jsonResult
@@ -109,12 +118,15 @@ def relation2json(rel):
     jsonResult += '"id": ' + json.dumps(rel._id) + ','
 
     jsonResult += '"type": ' + json.dumps(rel.type) + ','
-    jsonResult += '"nodes": [' + node2json(rel.nodes[0]) + ',' + node2json(rel.nodes[1]) + '],'
+    jsonResult += '"nodes": [' + \
+        node2json(rel.nodes[0]) + ',' + node2json(rel.nodes[1]) + '],'
 
-    jsonResult += '"properties": ' + json.dumps(rel._properties, default=set_default)
+    jsonResult += '"properties": ' + \
+        json.dumps(rel._properties, default=set_default)
     jsonResult += "}"
 
     return jsonResult
+
 
 def path2json(path):
     """
@@ -127,6 +139,7 @@ def path2json(path):
     jsonResult += "]"
 
     return jsonResult
+
 
 def set_default(obj):
     """
