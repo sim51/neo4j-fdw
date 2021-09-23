@@ -39,21 +39,6 @@ echo "~ Generate release notes"
 tmpfile=$(mktemp /tmp/release-neo4j-fdw.XXXXXX)
 echo "# Neo4j FDW Release v$version" > "$tmpfile"
 
-echo "Retrieving milestone issues"
-status=$(curl -w "%{http_code}" -s -o /dev/null -I -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/sim51/neo4j-fdw/issues?milestone=v$version")
-if [[ status == '200' ]]; then
-
-  echo "" >> "$tmpfile"
-  echo "## Fixes" >> "$tmpfile"
-  echo "" >> "$tmpfile"
-  curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/sim51/neo4j-fdw/issues?milestone=v$version&state=closed&sort=updated&labels=bug" | jq -r '.[] | [(.number), .title] | @tsv' | sed s/^/#/g >> "$tmpfile"
-
-  echo "" >> "$tmpfile"
-  echo "## Improvements" >> "$tmpfile"
-  echo "" >> "$tmpfile"
-  curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/sim51/neo4j-fdw/issues?milestone=v$version&state=closed&sort=updated&labels=enhancement" | jq -r '.[] | [(.number), .title] | @tsv' | sed s/^/#/g >> "$tmpfile"
-fi
-
 # retrieve last tag if not set
 latest=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/sim51/neo4j-fdw/tags" | jq -r '.[0].commit.sha')
 echo "" >> "$tmpfile"
