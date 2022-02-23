@@ -37,6 +37,5 @@ SELECT * FROM temporal WHERE temporal.my_localtime < (TIMETZ '12:45:30.25-01');
 
 /* Time without TZ comparisons */
 SELECT * FROM temporal WHERE temporal.my_time = (TIME '12:45:30.25');
-SELECT * FROM temporal WHERE temporal.my_time < (TIME '12:46:30.25');
 SELECT * FROM temporal WHERE temporal.my_time < (TIMETZ '12:45:30.25+01');
 SELECT * FROM temporal WHERE temporal.my_time < (TIMETZ '13:46:30.25+01');

@@ -166,7 +166,7 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
         # Step 3 : We construct the projection for the return
         # we only modify the projection if it's needed (ie. we don't return all the tables columns)
-        if(needUpdateProjection and len(columns) < len(self.columns)):
+        if(needUpdateProjection and len(columns) > 0 and len(columns) < len(self.columns)):
             return_pattern = re.compile('(.*)RETURN(.*)', re.IGNORECASE|re.MULTILINE|re.DOTALL)
             return_match = return_pattern.match(query)
             query = return_match.group(1) + "WITH" + return_match.group(2) + " RETURN " + ', '.join(columns)
@@ -440,4 +440,3 @@ class Neo4jForeignDataWrapper(ForeignDataWrapper):
 
         log_to_postgres('Value is ' + str(result), DEBUG)
         return result
-

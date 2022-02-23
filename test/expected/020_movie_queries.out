@@ -41,6 +41,10 @@ id|title|released|tagline
 9|The Matrix Reloaded|2003|Free your mind
 10|The Matrix Revolutions|2003|Everything that has a beginning has an end
 (3 rows)
+SELECT count(*) FROM movie m;
+count
+38
+(1 row)
 SELECT count(*) FROM movie m WHERE m.released > 2000;
 count
 12
